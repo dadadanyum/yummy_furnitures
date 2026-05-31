@@ -126,7 +126,7 @@ canvas.dragging { cursor: grabbing; }
 const _mob = window.innerWidth <= 860;
 const M   = _mob ? 16 : 60;
 const RW  = 788, RH = 420;
-const S   = _mob ? Math.max(0.25, (window.innerWidth - M*2) / RW) : 1.6;
+const S   = _mob ? Math.min((window.innerWidth - M*2) / RH, (window.innerHeight - 160) / RW) : 1.6;
 function px(c) { return c * S; }
 function cm(p) { return p / S; }
 
@@ -192,8 +192,8 @@ const FURNITURE = [
 // Canvas
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-canvas.width  = px(RW) + M*2;
-canvas.height = px(RH) + M*2;
+canvas.width  = _mob ? px(RH) + M*2 : px(RW) + M*2;
+canvas.height = _mob ? px(RW) + M*2 : px(RH) + M*2;
 const OX = M, OY = M;
 
 let drag=null, dOffX=0, dOffY=0, selId=null, isDragInvalid=false, lastVX=0, lastVY=0;
@@ -426,8 +426,10 @@ function drawFurniture(f){
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(_mob){ctx.save();ctx.translate(canvas.width,0);ctx.rotate(Math.PI/2);}
   drawRoom();
   FURNITURE.forEach(f=>drawFurniture(f));
+  if(_mob)ctx.restore();
 }
 
 function getPos(e){ return _pos(e); } // alias
@@ -440,7 +442,9 @@ function hitTest(f,mx,my){
 // Input: shared logic
 function _xy(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
-  return { x: cm(clientX - r.left - OX), y: cm(clientY - r.top - OY) };
+  const dx = clientX - r.left, dy = clientY - r.top;
+  if(_mob) return { x: cm(dy - OX), y: cm(canvas.width - dx - OY) };
+  return { x: cm(dx - OX), y: cm(dy - OY) };
 }
 function _startDrag(cx, cy) {
   const {x,y} = _xy(cx, cy);

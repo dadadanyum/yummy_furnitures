@@ -57,6 +57,17 @@ canvas.dragging { cursor: grabbing; }
 .map-btn.danger { border-color: #8a3a3a; color: #ffaaaa; }
 .map-btn.danger:hover { background: #4a2020; }
 
+
+@media (max-width: 860px) {
+  #map-actions {
+    top: 50%;
+    left: auto;
+    right: 0;
+    transform: translateY(-50%) rotate(90deg);
+    /* transform-origin defaults to center center — bar center stays 90px from right edge */
+  }
+}
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>

@@ -32,180 +32,20 @@ canvas { cursor: grab; display: block; touch-action: none; }
 canvas.dragging { cursor: grabbing; }
 #add-btn{width:calc(100% - 24px);margin:0 12px 10px;padding:6px;background:#1e3a1e;border:1px solid #2a5a2a;color:#7cc87c;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.5px}#add-btn:hover{background:#254a25}#delete-btn{width:100%;margin-top:6px;padding:5px;background:#3a1a1a;border:1px solid #6a2a2a;color:#cc7777;border-radius:4px;cursor:pointer;font-size:11px;display:none}#delete-btn:hover{background:#4a2222}#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}#modal-overlay.open{display:flex}#modal{background:#141428;border:1px solid #3a3a6a;border-radius:8px;padding:20px;width:260px}#modal h3{font-size:13px;font-weight:600;color:#c8d8f8;margin-bottom:14px}.mfield{margin-bottom:10px}.mfield label{display:block;font-size:10px;color:#667;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}.mfield input[type=text],.mfield input[type=number]{width:100%;padding:6px 8px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;color:#dde;font-size:12px;outline:none}.mfield input:focus{border-color:#5566aa}.mfield input[type=color]{width:100%;height:32px;padding:2px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer}.mrow{display:flex;gap:8px}.mrow .mfield{flex:1}.mbtns{display:flex;gap:8px;margin-top:14px}.mbtns button{flex:1;padding:7px;border-radius:4px;font-size:12px;cursor:pointer;border:1px solid}#modal-ok{background:#1e3a1e;border-color:#3a7a3a;color:#7cc87c;font-weight:600}#modal-ok:hover{background:#254a25}#modal-cancel{background:#1a1a30;border-color:#2a2a4a;color:#778}#modal-cancel:hover{background:#222240}
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js">
-// ── Firebase Firestore sync ────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyAekCv6uo_JPhutbd2w7wSXWgemnA1id9A",
-  authDomain: "yummy-furnitures.firebaseapp.com",
-  projectId: "yummy-furnitures",
-  storageBucket: "yummy-furnitures.firebasestorage.app",
-  messagingSenderId: "130307856967",
-  appId: "1:130307856967:web:06be64b03b92fecf8a6f62"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const LAYOUT_DOC = db.collection('layouts').doc('main');
-
-function setSyncStatus(state) {
-  const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = state;
-  lbl.className = state;
-  lbl.textContent = state === 'on' ? 'synced' : state === 'saving' ? 'saving...' : 'connecting...';
-}
-
-function saveLayout() {
-  setSyncStatus('saving');
-  const positions = {};
-  FURNITURE.forEach(f => {
-    positions[f.id] = { px: Math.round(f.px), py: Math.round(f.py), rot: (f.rot||0) };
-  });
-  const custom = FURNITURE
-    .filter(f => f.id.startsWith('custom_'))
-    .map(f => ({ id:f.id, name:f.name, color:f.color, type:f.type||'rect', w:f.w, h:f.h,
-                 px:Math.round(f.px), py:Math.round(f.py), rot:(f.rot||0) }));
-  LAYOUT_DOC.set({ positions, custom })
-    .then(() => setSyncStatus('on'))
-    .catch(e => { console.error(e); setSyncStatus(''); });
-}
-
-// Listen for remote changes
-LAYOUT_DOC.onSnapshot(snap => {
-  // skip our own writes
-  if (snap.metadata.hasPendingWrites) return;
-  // skip while user is dragging
-  if (drag) return;
-  if (!snap.exists) { setSyncStatus('on'); return; }
-  setSyncStatus('on');
-  const data = snap.data();
-
-  // Apply position/rotation to existing furniture
-  if (data.positions) {
-    Object.entries(data.positions).forEach(([id, pos]) => {
-      const f = FURNITURE.find(f => f.id === id);
-      if (f) { f.px = pos.px; f.py = pos.py; f.rot = pos.rot; }
-    });
-  }
-
-  // Sync custom furniture
-  if (data.custom) {
-    // Add pieces that don't exist locally
-    data.custom.forEach(cf => {
-      let f = FURNITURE.find(f => f.id === cf.id);
-      if (!f) {
-        const newF = { id:cf.id, name:cf.name, color:cf.color, type:cf.type||'rect',
-                       w:cf.w, h:cf.h, px:cf.px, py:cf.py, rot:cf.rot||0 };
-        FURNITURE.push(newF);
-        addCard(newF);
-      } else {
-        f.px = cf.px; f.py = cf.py; f.rot = cf.rot||0;
-      }
-    });
-    // Remove custom pieces deleted remotely
-    FURNITURE.filter(f => f.id.startsWith('custom_')).forEach(f => {
-      if (!data.custom.find(cf => cf.id === f.id)) {
-        FURNITURE.splice(FURNITURE.indexOf(f), 1);
-        const card = document.querySelector('.furn-card[data-id="' + f.id + '"]');
-        if (card) card.remove();
-      }
-    });
-  }
-  draw();
-});
-</script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js">
-// ── Firebase Firestore sync ────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyAekCv6uo_JPhutbd2w7wSXWgemnA1id9A",
-  authDomain: "yummy-furnitures.firebaseapp.com",
-  projectId: "yummy-furnitures",
-  storageBucket: "yummy-furnitures.firebasestorage.app",
-  messagingSenderId: "130307856967",
-  appId: "1:130307856967:web:06be64b03b92fecf8a6f62"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const LAYOUT_DOC = db.collection('layouts').doc('main');
-
-function setSyncStatus(state) {
-  const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = state;
-  lbl.className = state;
-  lbl.textContent = state === 'on' ? 'synced' : state === 'saving' ? 'saving...' : 'connecting...';
-}
-
-function saveLayout() {
-  setSyncStatus('saving');
-  const positions = {};
-  FURNITURE.forEach(f => {
-    positions[f.id] = { px: Math.round(f.px), py: Math.round(f.py), rot: (f.rot||0) };
-  });
-  const custom = FURNITURE
-    .filter(f => f.id.startsWith('custom_'))
-    .map(f => ({ id:f.id, name:f.name, color:f.color, type:f.type||'rect', w:f.w, h:f.h,
-                 px:Math.round(f.px), py:Math.round(f.py), rot:(f.rot||0) }));
-  LAYOUT_DOC.set({ positions, custom })
-    .then(() => setSyncStatus('on'))
-    .catch(e => { console.error(e); setSyncStatus(''); });
-}
-
-// Listen for remote changes
-LAYOUT_DOC.onSnapshot(snap => {
-  // skip our own writes
-  if (snap.metadata.hasPendingWrites) return;
-  // skip while user is dragging
-  if (drag) return;
-  if (!snap.exists) { setSyncStatus('on'); return; }
-  setSyncStatus('on');
-  const data = snap.data();
-
-  // Apply position/rotation to existing furniture
-  if (data.positions) {
-    Object.entries(data.positions).forEach(([id, pos]) => {
-      const f = FURNITURE.find(f => f.id === id);
-      if (f) { f.px = pos.px; f.py = pos.py; f.rot = pos.rot; }
-    });
-  }
-
-  // Sync custom furniture
-  if (data.custom) {
-    // Add pieces that don't exist locally
-    data.custom.forEach(cf => {
-      let f = FURNITURE.find(f => f.id === cf.id);
-      if (!f) {
-        const newF = { id:cf.id, name:cf.name, color:cf.color, type:cf.type||'rect',
-                       w:cf.w, h:cf.h, px:cf.px, py:cf.py, rot:cf.rot||0 };
-        FURNITURE.push(newF);
-        addCard(newF);
-      } else {
-        f.px = cf.px; f.py = cf.py; f.rot = cf.rot||0;
-      }
-    });
-    // Remove custom pieces deleted remotely
-    FURNITURE.filter(f => f.id.startsWith('custom_')).forEach(f => {
-      if (!data.custom.find(cf => cf.id === f.id)) {
-        FURNITURE.splice(FURNITURE.indexOf(f), 1);
-        const card = document.querySelector('.furn-card[data-id="' + f.id + '"]');
-        if (card) card.remove();
-      }
-    });
-  }
-  draw();
-});
-</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
-#sync-dot{width:8px;height:8px;border-radius:50%;background:#444;margin-left:auto;flex-shrink:0;transition:background .4s}
+#sync-dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:background .4s}
 #sync-dot.on{background:#4caf50}#sync-dot.saving{background:#ffaa00}
-#sync-label{font-size:10px;color:#556;transition:color .4s}
-#sync-label.on{color:#4caf50}#sync-label.saving{color:#ffaa00}
-</style></head>
+#sync-lbl{font-size:10px;color:#556;margin-left:auto;transition:color .4s}
+#sync-lbl.on{color:#4caf50}#sync-lbl.saving{color:#ffaa00}
+</style>
+</head>
 <body>
 <header>
   <h1>&#127968; Living Room Planner</h1>
   <span class="hint">1 block = 10 cm &nbsp;&#183;&nbsp; Drag to move &nbsp;&#183;&nbsp; Right-click to rotate &nbsp;&#183;&nbsp; Red = blocked</span>
-  <span id="sync-label" style="margin-left:auto">connecting...</span>
-  <span id="sync-dot"></span>
+  <span id="sync-lbl">connecting...</span><span id="sync-dot" style="margin-left:6px"></span>
 </header>
 <div id="main">
   <div id="panel">
@@ -560,7 +400,7 @@ canvas.addEventListener('mousedown',e=>{
       updatePanel(); draw(); return;
     }
   }
-  selId=null; updatePanel(); draw(); saveLayout();
+  selId=null; updatePanel(); draw();
 });
 
 canvas.addEventListener('mousemove',e=>{
@@ -574,9 +414,7 @@ canvas.addEventListener('mousemove',e=>{
 
 function endDrag(){
   if(drag&&isDragInvalid){drag.px=lastVX;drag.py=lastVY;isDragInvalid=false;}
-  const wasDragging = drag !== null;
   drag=null; canvas.classList.remove('dragging'); draw(); updatePanel();
-  if(wasDragging) saveLayout();
 }
 canvas.addEventListener('mouseup',endDrag);
 canvas.addEventListener('mouseleave',endDrag);
@@ -640,7 +478,7 @@ function addCustom(){
   FURNITURE.push(f);
   addCard(f);
   closeModal();
-  selId=id; updatePanel(); draw(); saveLayout();
+  selId=id; updatePanel(); draw();
   document.getElementById('f-name').value='';
 }
 function addCard(f){
@@ -657,7 +495,7 @@ function deleteSelected(){
   FURNITURE.splice(idx,1);
   const card=document.querySelector('.furn-card[data-id="'+selId+'"]');
   if(card)card.remove();
-  selId=null; updatePanel(); draw(); saveLayout();
+  selId=null; updatePanel(); draw();
 }
 
 // Touch support
@@ -704,87 +542,95 @@ canvas.addEventListener('touchend', function(e) {
 canvas.addEventListener('touchcancel', function(e) {
   endDrag();
 }, { passive: false });
-
-// ── Firebase Firestore sync ────────────────────────────────────────────────────
-const firebaseConfig = {
+</script>
+<div id="modal-overlay"><div id="modal"><h3>Add Furniture</h3><div class="mfield"><label>Name</label><input type="text" id="f-name" placeholder="e.g. Side Table"/></div><div class="mrow"><div class="mfield"><label>Width (cm)</label><input type="number" id="f-w" min="1" max="700" value="60"/></div><div class="mfield"><label>Depth (cm)</label><input type="number" id="f-d" min="1" max="700" value="40"/></div></div><div class="mfield"><label>Color</label><input type="color" id="f-color" value="#6a8a9a"/></div><div class="mbtns"><button id="modal-cancel" onclick="closeModal()">Cancel</button><button id="modal-ok" onclick="addCustom()">Add</button></div></div></div>
+<script>
+// ── Firebase ──────────────────────────────────────────────────────────────────
+firebase.initializeApp({
   apiKey: "AIzaSyAekCv6uo_JPhutbd2w7wSXWgemnA1id9A",
   authDomain: "yummy-furnitures.firebaseapp.com",
   projectId: "yummy-furnitures",
   storageBucket: "yummy-furnitures.firebasestorage.app",
   messagingSenderId: "130307856967",
   appId: "1:130307856967:web:06be64b03b92fecf8a6f62"
-};
-firebase.initializeApp(firebaseConfig);
+});
 const db = firebase.firestore();
 const LAYOUT_DOC = db.collection('layouts').doc('main');
 
-function setSyncStatus(state) {
+function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = state;
-  lbl.className = state;
-  lbl.textContent = state === 'on' ? 'synced' : state === 'saving' ? 'saving...' : 'connecting...';
+  const lbl = document.getElementById('sync-lbl');
+  dot.className = s; lbl.className = s;
+  lbl.textContent = s === 'on' ? 'synced' : s === 'saving' ? 'saving...' : 'connecting...';
 }
 
 function saveLayout() {
   setSyncStatus('saving');
   const positions = {};
-  FURNITURE.forEach(f => {
-    positions[f.id] = { px: Math.round(f.px), py: Math.round(f.py), rot: (f.rot||0) };
-  });
-  const custom = FURNITURE
-    .filter(f => f.id.startsWith('custom_'))
-    .map(f => ({ id:f.id, name:f.name, color:f.color, type:f.type||'rect', w:f.w, h:f.h,
-                 px:Math.round(f.px), py:Math.round(f.py), rot:(f.rot||0) }));
-  LAYOUT_DOC.set({ positions, custom })
+  FURNITURE.forEach(f => { positions[f.id] = {px:Math.round(f.px), py:Math.round(f.py), rot:f.rot||0}; });
+  const custom = FURNITURE.filter(f => f.id.startsWith('custom_'))
+    .map(f => ({id:f.id, name:f.name, color:f.color, type:f.type||'rect', w:f.w, h:f.h, px:Math.round(f.px), py:Math.round(f.py), rot:f.rot||0}));
+  LAYOUT_DOC.set({positions, custom})
     .then(() => setSyncStatus('on'))
-    .catch(e => { console.error(e); setSyncStatus(''); });
+    .catch(e => { console.error('Save failed:', e); setSyncStatus(''); });
 }
 
-// Listen for remote changes
 LAYOUT_DOC.onSnapshot(snap => {
-  // skip our own writes
-  if (snap.metadata.hasPendingWrites) return;
-  // skip while user is dragging
-  if (drag) return;
-  if (!snap.exists) { setSyncStatus('on'); return; }
+  if (snap.metadata.hasPendingWrites) return; // skip our own writes
+  if (drag) return;                            // skip while user is dragging
   setSyncStatus('on');
+  if (!snap.exists) return;
   const data = snap.data();
 
-  // Apply position/rotation to existing furniture
   if (data.positions) {
     Object.entries(data.positions).forEach(([id, pos]) => {
       const f = FURNITURE.find(f => f.id === id);
-      if (f) { f.px = pos.px; f.py = pos.py; f.rot = pos.rot; }
+      if (f) { f.px = pos.px; f.py = pos.py; f.rot = pos.rot||0; }
     });
   }
 
-  // Sync custom furniture
   if (data.custom) {
-    // Add pieces that don't exist locally
     data.custom.forEach(cf => {
       let f = FURNITURE.find(f => f.id === cf.id);
       if (!f) {
-        const newF = { id:cf.id, name:cf.name, color:cf.color, type:cf.type||'rect',
-                       w:cf.w, h:cf.h, px:cf.px, py:cf.py, rot:cf.rot||0 };
-        FURNITURE.push(newF);
-        addCard(newF);
-      } else {
-        f.px = cf.px; f.py = cf.py; f.rot = cf.rot||0;
-      }
+        const nf = {id:cf.id,name:cf.name,color:cf.color,type:cf.type||'rect',w:cf.w,h:cf.h,px:cf.px,py:cf.py,rot:cf.rot||0};
+        FURNITURE.push(nf); addCard(nf);
+      } else { f.px=cf.px; f.py=cf.py; f.rot=cf.rot||0; }
     });
-    // Remove custom pieces deleted remotely
-    FURNITURE.filter(f => f.id.startsWith('custom_')).forEach(f => {
-      if (!data.custom.find(cf => cf.id === f.id)) {
-        FURNITURE.splice(FURNITURE.indexOf(f), 1);
-        const card = document.querySelector('.furn-card[data-id="' + f.id + '"]');
-        if (card) card.remove();
+    FURNITURE.filter(f=>f.id.startsWith('custom_')).forEach(f=>{
+      if (!data.custom.find(cf=>cf.id===f.id)){
+        FURNITURE.splice(FURNITURE.indexOf(f),1);
+        const card=document.querySelector('.furn-card[data-id="'+f.id+'"]');
+        if(card) card.remove();
       }
     });
   }
   draw();
-});
+}, err => { console.error('Listener error:', err); setSyncStatus(''); });
+
+// Hook save into user actions
+const _endDrag = endDrag;
+window.endDrag = function() {
+  const wasD = !!drag; _endDrag();
+  if (wasD) saveLayout();
+};
+canvas.removeEventListener('mouseup', _endDrag);
+canvas.removeEventListener('mouseleave', _endDrag);
+canvas.addEventListener('mouseup', window.endDrag);
+canvas.addEventListener('mouseleave', window.endDrag);
+
+// Touch events also use window.endDrag — patch touchend
+canvas.removeEventListener('touchend', _endDrag);
+canvas.addEventListener('touchend', function(e){ e.preventDefault(); window.endDrag(); }, {passive:false});
+
+const _addCustom = addCustom;
+window.addCustom = function() { _addCustom(); saveLayout(); };
+
+const _deleteSelected = deleteSelected;
+window.deleteSelected = function() { _deleteSelected(); saveLayout(); };
+
+const _rotateSelected = rotateSelected;
+window.rotateSelected = function() { _rotateSelected(); saveLayout(); };
 </script>
-<div id="modal-overlay"><div id="modal"><h3>Add Furniture</h3><div class="mfield"><label>Name</label><input type="text" id="f-name" placeholder="e.g. Side Table"/></div><div class="mrow"><div class="mfield"><label>Width (cm)</label><input type="number" id="f-w" min="1" max="700" value="60"/></div><div class="mfield"><label>Depth (cm)</label><input type="number" id="f-d" min="1" max="700" value="40"/></div></div><div class="mfield"><label>Color</label><input type="color" id="f-color" value="#6a8a9a"/></div><div class="mbtns"><button id="modal-cancel" onclick="closeModal()">Cancel</button><button id="modal-ok" onclick="addCustom()">Add</button></div></div></div>
 </body>
 </html>

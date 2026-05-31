@@ -577,8 +577,10 @@ function buildList() {
   list.innerHTML = '';
   FURNITURE.forEach(function(f) { addCard(f); });
 }
+console.log("PRE_BUILD _mob="+_mob+" FURNITURE="+FURNITURE.length);
 buildList();
-draw();
+console.log("POST_BUILD list="+document.getElementById("furniture-list").children.length);
+try{draw();}catch(e){console.error("DRAW_ERR",e.message);}
 
 // Rebuild list if it ever ends up empty (e.g. after Firestore sync clears it)
 document.addEventListener('visibilitychange', function() {

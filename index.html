@@ -29,7 +29,8 @@ header h1 { font-size: 15px; font-weight: 600; color: #c8d8f8; }
 .leg { display: flex; align-items: center; gap: 6px; }
 .leg-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
 #canvas-area { flex: 1; overflow: auto; background: #090912; padding: 24px; }
-canvas { cursor: grab; display: block; touch-action: none; }
+canvas { cursor: grab; display: block; touch-action: none; -webkit-user-select: none; user-select: none; }
+#canvas-area { touch-action: none; }
 canvas.dragging { cursor: grabbing; }
 #add-btn{width:calc(100% - 24px);margin:0 12px 10px;padding:6px;background:#1e3a1e;border:1px solid #2a5a2a;color:#7cc87c;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.5px}#add-btn:hover{background:#254a25}#delete-btn{width:100%;margin-top:6px;padding:5px;background:#3a1a1a;border:1px solid #6a2a2a;color:#cc7777;border-radius:4px;cursor:pointer;font-size:11px;display:none}#delete-btn:hover{background:#4a2222}#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}#modal-overlay.open{display:flex}#modal{background:#141428;border:1px solid #3a3a6a;border-radius:8px;padding:20px;width:260px}#modal h3{font-size:13px;font-weight:600;color:#c8d8f8;margin-bottom:14px}.mfield{margin-bottom:10px}.mfield label{display:block;font-size:10px;color:#667;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}.mfield input[type=text],.mfield input[type=number]{width:100%;padding:6px 8px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;color:#dde;font-size:12px;outline:none}.mfield input:focus{border-color:#5566aa}.mfield input[type=color]{width:100%;height:32px;padding:2px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer}.mrow{display:flex;gap:8px}.mrow .mfield{flex:1}.mbtns{display:flex;gap:8px;margin-top:14px}.mbtns button{flex:1;padding:7px;border-radius:4px;font-size:12px;cursor:pointer;border:1px solid}#modal-ok{background:#1e3a1e;border-color:#3a7a3a;color:#7cc87c;font-weight:600}#modal-ok:hover{background:#254a25}#modal-cancel{background:#1a1a30;border-color:#2a2a4a;color:#778}#modal-cancel:hover{background:#222240}
 
@@ -50,8 +51,9 @@ canvas.dragging { cursor: grabbing; }
     max-height: 56vh; border-right: none; border-radius: 14px 14px 0 0;
     border-top: 2px solid #3a3a6a; z-index: 50;
     transform: translateY(100%); transition: transform .25s ease;
+    pointer-events: none;
   }
-  #panel.show { transform: translateY(0); }
+  #panel.show { transform: translateY(0); pointer-events: auto; }
   #canvas-area { padding: 4px; touch-action: none; }
   #mob-btn { display: flex !important; }
 }
@@ -81,8 +83,9 @@ canvas.dragging { cursor: grabbing; }
     max-height: 56vh; border-right: none; border-radius: 14px 14px 0 0;
     border-top: 2px solid #3a3a6a; z-index: 50;
     transform: translateY(100%); transition: transform .25s ease;
+    pointer-events: none;
   }
-  #panel.show { transform: translateY(0); }
+  #panel.show { transform: translateY(0); pointer-events: auto; }
   #canvas-area { padding: 4px; touch-action: none; }
   #mob-btn { display: flex !important; }
 }
@@ -434,68 +437,76 @@ function hitTest(f,mx,my){
   return rx>=0&&rx<=w&&ry>=0&&ry<=h;
 }
 
-// Unified Pointer Events — works for mouse, touch, and stylus
-let _pid = null;
-
-function _pos(e) {
+// Input: shared logic
+function _xy(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
-  return { x: cm(e.clientX - r.left - OX), y: cm(e.clientY - r.top - OY) };
+  return { x: cm(clientX - r.left - OX), y: cm(clientY - r.top - OY) };
 }
-
-function endDrag() {
-  if (drag && isDragInvalid) { drag.px = lastVX; drag.py = lastVY; isDragInvalid = false; }
-  drag = null; canvas.classList.remove('dragging'); draw(); updatePanel();
-}
-
-canvas.style.touchAction = 'none';
-
-canvas.addEventListener('pointerdown', e => {
-  if (e.button === 2) return;
-  e.preventDefault();
-  const {x,y} = _pos(e);
+function _startDrag(cx, cy) {
+  const {x,y} = _xy(cx, cy);
   for (let i = FURNITURE.length-1; i >= 0; i--) {
     if (hitTest(FURNITURE[i], x, y)) {
-      canvas.setPointerCapture(e.pointerId);
-      _pid = e.pointerId;
       drag = FURNITURE[i]; selId = drag.id;
-      dOffX = x - drag.px; dOffY = y - drag.py;
+      dOffX = x-drag.px; dOffY = y-drag.py;
       lastVX = drag.px; lastVY = drag.py; isDragInvalid = false;
-      FURNITURE.push(FURNITURE.splice(i, 1)[0]);
+      FURNITURE.push(FURNITURE.splice(i,1)[0]);
       canvas.classList.add('dragging');
       updatePanel(); draw(); return;
     }
   }
   selId = null; updatePanel(); draw();
-});
-
-canvas.addEventListener('pointermove', e => {
-  if (!drag || e.pointerId !== _pid) return;
-  e.preventDefault();
-  const {x,y} = _pos(e);
-  drag.px = x - dOffX; drag.py = y - dOffY;
+}
+function _moveDrag(cx, cy) {
+  if (!drag) return;
+  const {x,y} = _xy(cx, cy);
+  drag.px = x-dOffX; drag.py = y-dOffY;
   isDragInvalid = !isValid(drag);
   if (!isDragInvalid) { lastVX = drag.px; lastVY = drag.py; }
   draw(); updatePanel();
-});
+}
+function endDrag() {
+  if (drag && isDragInvalid) { drag.px = lastVX; drag.py = lastVY; isDragInvalid = false; }
+  drag = null; canvas.classList.remove('dragging'); draw(); updatePanel();
+}
 
-canvas.addEventListener('pointerup', e => {
-  if (e.pointerId !== _pid) return;
-  _pid = null; endDrag();
-});
-
-canvas.addEventListener('pointercancel', e => {
-  _pid = null; endDrag();
-});
-
-canvas.addEventListener('contextmenu', e => {
+// Touch events (iOS + Android)
+let _touch = false;
+canvas.addEventListener('touchstart', function(e) {
+  e.preventDefault(); _touch = true;
+  _startDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+}, { passive: false });
+canvas.addEventListener('touchmove', function(e) {
   e.preventDefault();
-  const {x,y} = _pos(e);
+  _moveDrag(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+}, { passive: false });
+canvas.addEventListener('touchend', function(e) {
+  e.preventDefault(); endDrag();
+  setTimeout(function(){ _touch = false; }, 300);
+}, { passive: false });
+canvas.addEventListener('touchcancel', function(e) { endDrag(); _touch = false; }, { passive: false });
+
+// Mouse events (desktop) — skipped if touch already handled it
+canvas.addEventListener('mousedown', function(e) {
+  if (_touch || e.button === 2) return;
+  _startDrag(e.clientX, e.clientY);
+});
+canvas.addEventListener('mousemove', function(e) {
+  if (_touch) return;
+  _moveDrag(e.clientX, e.clientY);
+});
+canvas.addEventListener('mouseup',    function(e) { if (!_touch) endDrag(); });
+canvas.addEventListener('mouseleave', function(e) { if (!_touch) endDrag(); });
+
+// Right-click = rotate
+canvas.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+  const {x,y} = _xy(e.clientX, e.clientY);
   for (let i = FURNITURE.length-1; i >= 0; i--) {
-    if (hitTest(FURNITURE[i], x, y)) { selId = FURNITURE[i].id; rotateSelected(); return; }
+    if (hitTest(FURNITURE[i],x,y)) { selId = FURNITURE[i].id; rotateSelected(); return; }
   }
 });
 
-function getPos(e) { return _pos(e); } // kept for compatibility
+function getPos(e) { return _xy(e.clientX, e.clientY); }
 
 </script>
 <div id="modal-overlay"><div id="modal"><h3>Add Furniture</h3><div class="mfield"><label>Name</label><input type="text" id="f-name" placeholder="e.g. Side Table"/></div><div class="mrow"><div class="mfield"><label>Width (cm)</label><input type="number" id="f-w" min="1" max="700" value="60"/></div><div class="mfield"><label>Depth (cm)</label><input type="number" id="f-d" min="1" max="700" value="40"/></div></div><div class="mfield"><label>Color</label><input type="color" id="f-color" value="#6a8a9a"/></div><div class="mbtns"><button id="modal-cancel" onclick="closeModal()">Cancel</button><button id="modal-ok" onclick="addCustom()">Add</button></div></div></div>

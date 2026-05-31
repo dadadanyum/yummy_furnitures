@@ -28,7 +28,7 @@ header h1 { font-size: 15px; font-weight: 600; color: #c8d8f8; }
 #legend { padding: 8px 12px; border-top: 1px solid #1a1a30; font-size: 10px; color: #445; line-height: 1.9; flex-shrink: 0; }
 .leg { display: flex; align-items: center; gap: 6px; }
 .leg-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
-#canvas-area { flex: 1; overflow: auto; background: #090912; padding: 24px; }
+#canvas-area { flex: 1; overflow: auto; background: #d8d8d8; padding: 24px; }
 canvas { cursor: grab; display: block; touch-action: none; -webkit-user-select: none; user-select: none; }
 #canvas-area { touch-action: none; }
 canvas.dragging { cursor: grabbing; }
@@ -62,9 +62,9 @@ canvas.dragging { cursor: grabbing; }
   #map-actions {
     top: 50%;
     left: auto;
-    right: 0;
+    right: -52px;
     transform: translateY(-50%) rotate(90deg);
-    /* transform-origin defaults to center center — bar center stays 90px from right edge */
+    transform-origin: center center;
   }
 }
 
@@ -98,7 +98,7 @@ canvas.dragging { cursor: grabbing; }
   }
   #panel.show { transform: translateY(0); pointer-events: auto; }
   #panel.show #panel-top { overflow-y: auto; }
-  #canvas-area { padding: 4px; touch-action: none; }
+  #canvas-area { padding: 4px; touch-action: none; background: #d8d8d8; }
   #mob-btn { display: flex !important; }
 }
 </style>
@@ -123,8 +123,8 @@ canvas.dragging { cursor: grabbing; }
       <button id="delete-btn" onclick="deleteSelected()">&#10005; Remove</button>
     </div>
     <div id="legend">
-      <div class="leg"><span class="leg-swatch" style="background:#13132a"></span>Room floor</div>
-      <div class="leg"><span class="leg-swatch" style="background:#080810"></span>Column / fixed structure</div>
+      <div class="leg"><span class="leg-swatch" style="background:#f0f0ec;border:1px solid #ccc"></span>Room floor</div>
+      <div class="leg"><span class="leg-swatch" style="background:#c8c8c4;border:1px solid #999"></span>Column / fixed structure</div>
       <div class="leg"><span class="leg-swatch" style="background:rgba(140,30,30,0.4)"></span>Door swing zone</div>
       <div class="leg"><span class="leg-swatch" style="background:#ffcc44;height:2px;margin-top:5px"></span>Door arc</div>
     </div>
@@ -278,20 +278,25 @@ function borderColor(hex,sel,inv){
 }
 
 function wallLabel(x1,y1,x2,y2,text,offX,offY){
-  const cx=OX+px((x1+x2)/2)+offX, cy=OY+px((y1+y2)/2)+offY;
+  // Scale offsets on mobile so labels stay inside canvas
+  const scale = _mob ? 0.45 : 1;
+  const cx=OX+px((x1+x2)/2)+offX*scale, cy=OY+px((y1+y2)/2)+offY*scale;
+  // Skip labels that fall outside canvas bounds
+  if(cx<0||cy<0||cx>canvas.width/DPR||cy>canvas.height/DPR) return;
   ctx.save();
-  ctx.font='bold 10px sans-serif';
+  const fs=_mob?8:10;
+  ctx.font='bold '+fs+'px sans-serif';
   const tw=ctx.measureText(text).width;
-  ctx.fillStyle='rgba(8,8,22,0.85)';
-  ctx.fillRect(cx-tw/2-4,cy-7,tw+8,14);
-  ctx.strokeStyle='#3a5a7a'; ctx.lineWidth=0.5;
-  ctx.strokeRect(cx-tw/2-4,cy-7,tw+8,14);
-  ctx.fillStyle='#88aacc';
+  ctx.fillStyle='rgba(240,240,236,0.92)';
+  ctx.fillRect(cx-tw/2-3,cy-6,tw+6,12);
+  ctx.strokeStyle='#889aaa'; ctx.lineWidth=0.5;
+  ctx.strokeRect(cx-tw/2-3,cy-6,tw+6,12);
+  ctx.fillStyle='#336699';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(text,cx,cy);
   const dx=px(x2-x1),dy=px(y2-y1),L=Math.sqrt(dx*dx+dy*dy)||1;
-  const tx=-dy/L*5,ty=dx/L*5;
-  ctx.strokeStyle='#4a6a8a'; ctx.lineWidth=1;
+  const tx=-dy/L*4,ty=dx/L*4;
+  ctx.strokeStyle='#6688aa'; ctx.lineWidth=0.8;
   ctx.beginPath();
   ctx.moveTo(OX+px(x1)+tx,OY+px(y1)+ty); ctx.lineTo(OX+px(x1)-tx,OY+px(y1)-ty);
   ctx.moveTo(OX+px(x2)+tx,OY+px(y2)+ty); ctx.lineTo(OX+px(x2)-tx,OY+px(y2)-ty);
@@ -306,11 +311,14 @@ function roomPath(){
 }
 
 function drawRoom(){
-  ctx.save(); roomPath(); ctx.fillStyle='#12122a'; ctx.fill(); ctx.clip();
-  ctx.strokeStyle='#191932'; ctx.lineWidth=0.5;
+  // Fill entire canvas with off-room color (kitchen, voids, outside)
+  ctx.fillStyle='#d4d4cc';
+  ctx.fillRect(0,0,canvas.width/DPR,canvas.height/DPR);
+  ctx.save(); roomPath(); ctx.fillStyle='#f0f0ec'; ctx.fill(); ctx.clip();
+  ctx.strokeStyle='#cccccc'; ctx.lineWidth=0.5;
   for(let x=0;x<=RW;x+=10){ctx.beginPath();ctx.moveTo(OX+px(x),OY);ctx.lineTo(OX+px(x),OY+px(RH));ctx.stroke();}
   for(let y=0;y<=RH;y+=10){ctx.beginPath();ctx.moveTo(OX,OY+px(y));ctx.lineTo(OX+px(RW),OY+px(y));ctx.stroke();}
-  ctx.strokeStyle='#1e1e40'; ctx.lineWidth=1;
+  ctx.strokeStyle='#bbbbbb'; ctx.lineWidth=1;
   for(let x=0;x<=RW;x+=100){ctx.beginPath();ctx.moveTo(OX+px(x),OY);ctx.lineTo(OX+px(x),OY+px(RH));ctx.stroke();}
   for(let y=0;y<=RH;y+=100){ctx.beginPath();ctx.moveTo(OX,OY+px(y));ctx.lineTo(OX+px(RW),OY+px(y));ctx.stroke();}
   ctx.restore();
@@ -355,21 +363,21 @@ function drawRoom(){
 
   // Black zones
   BLACK_ZONES.forEach(z=>{
-    ctx.fillStyle='#080810';
+    ctx.fillStyle='#c8c8c4';
     ctx.fillRect(OX+px(z.x),OY+px(z.y),px(z.w),px(z.h));
-    ctx.strokeStyle='#1c1c1c'; ctx.lineWidth=1;
+    ctx.strokeStyle='#999994'; ctx.lineWidth=1;
     ctx.strokeRect(OX+px(z.x),OY+px(z.y),px(z.w),px(z.h));
-    ctx.fillStyle='#2e2e2e'; ctx.font='bold 10px sans-serif';
+    ctx.fillStyle='#666660'; ctx.font='bold 10px sans-serif';
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(z.label,OX+px(z.x)+px(z.w)/2,OY+px(z.y)+px(z.h)/2-(z.sub?6:0));
-    if(z.sub){ctx.font='9px sans-serif';ctx.fillStyle='#252525';ctx.fillText(z.sub,OX+px(z.x)+px(z.w)/2,OY+px(z.y)+px(z.h)/2+7);}
+    if(z.sub){ctx.font='9px sans-serif';ctx.fillStyle='#888882';ctx.fillText(z.sub,OX+px(z.x)+px(z.w)/2,OY+px(z.y)+px(z.h)/2+7);}
   });
 
-  ctx.fillStyle='#2a2a3a'; ctx.font='11px sans-serif';
+  ctx.fillStyle='#888884'; ctx.font='11px sans-serif';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText('KITCHEN',OX-30,OY+px(90));
 
-  roomPath(); ctx.strokeStyle='#7788bb'; ctx.lineWidth=3; ctx.stroke();
+  roomPath(); ctx.strokeStyle='#445588'; ctx.lineWidth=3; ctx.stroke();
 
   // Wall labels
   wallLabel(  0,   0, 108,   0, '108 cm',  0, -42);   // column top
@@ -405,7 +413,7 @@ function drawFurniture(f){
   function drawPiece(rx,ry,rw,rh){
     ctx.fillStyle=inv?'rgba(200,34,34,0.85)':(light?f.color+'ee':f.color+'dd');
     ctx.fillRect(px(rx),px(ry),px(rw),px(rh));
-    ctx.strokeStyle=bc; ctx.lineWidth=sel?2:1;
+    ctx.strokeStyle=bc; ctx.lineWidth=sel?3:2;
     ctx.strokeRect(px(rx),px(ry),px(rw),px(rh));
   }
   if(f.type==='L'){

@@ -192,8 +192,13 @@ const FURNITURE = [
 // Canvas
 const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
-canvas.width  = _mob ? px(RH) + M*2 : px(RW) + M*2;
-canvas.height = _mob ? px(RW) + M*2 : px(RH) + M*2;
+const DPR  = Math.min(window.devicePixelRatio || 1, 3);
+const cssW = _mob ? px(RH) + M*2 : px(RW) + M*2;
+const cssH = _mob ? px(RW) + M*2 : px(RH) + M*2;
+canvas.width        = Math.round(cssW * DPR);
+canvas.height       = Math.round(cssH * DPR);
+canvas.style.width  = cssW + 'px';
+canvas.style.height = cssH + 'px';
 const OX = M, OY = M;
 
 let drag=null, dOffX=0, dOffY=0, selId=null, isDragInvalid=false, lastVX=0, lastVY=0;
@@ -426,10 +431,12 @@ function drawFurniture(f){
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(_mob){ctx.save();ctx.translate(canvas.width,0);ctx.rotate(Math.PI/2);}
+  ctx.save();
+  ctx.scale(DPR,DPR);
+  if(_mob){ctx.translate(cssW,0);ctx.rotate(Math.PI/2);}
   drawRoom();
   FURNITURE.forEach(f=>drawFurniture(f));
-  if(_mob)ctx.restore();
+  ctx.restore();
 }
 
 function getPos(e){ return _pos(e); } // alias
@@ -443,7 +450,7 @@ function hitTest(f,mx,my){
 function _xy(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
   const dx = clientX - r.left, dy = clientY - r.top;
-  if(_mob) return { x: cm(dy - OX), y: cm(canvas.width - dx - OY) };
+  if(_mob) return { x: cm(dy - OX), y: cm(r.width - dx - OY) };
   return { x: cm(dx - OX), y: cm(dy - OY) };
 }
 function _startDrag(cx, cy) {

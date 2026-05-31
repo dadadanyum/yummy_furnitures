@@ -147,11 +147,7 @@ const M = _isMob ? 14 : 60;
 function px(c) { return c * S; }
 function cm(p) { return p / S; }
 
-// Dimensions:
-//   Total width  = 108 (column) + 680 (room) = 788 cm
-//   Total height = 420 cm  (360 navigable + 60 fixed structure at south)
-const RW = 788;   // total width
-const RH = 420;   // total height (room goes full 420; fixed structure is inside at south)
+// Total width = 788cm, height = 420cm
 
 // Room polygon — entire 420cm height; fixed structure handled as void overlay
 const ROOM_POLY = [

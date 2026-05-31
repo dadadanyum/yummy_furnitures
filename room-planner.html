@@ -1,0 +1,494 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Living Room Planner</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d0d1a; color: #e0e0e0; font-family: "Segoe UI", sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+header { padding: 10px 20px; background: #141428; border-bottom: 1px solid #2a2a4a; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+header h1 { font-size: 15px; font-weight: 600; color: #c8d8f8; }
+.hint { font-size: 11px; color: #556; }
+#main { display: flex; flex: 1; overflow: hidden; }
+#panel { width: 215px; background: #141428; border-right: 1px solid #2a2a4a; display: flex; flex-direction: column; flex-shrink: 0; }
+#panel-top { padding: 12px; overflow-y: auto; flex: 1; }
+#panel h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #445; margin-bottom: 10px; }
+.furn-card { background: #1c1c38; border-radius: 5px; padding: 7px 10px; margin-bottom: 5px; cursor: pointer; border: 1px solid #2a2a4a; transition: all 0.12s; user-select: none; }
+.furn-card:hover { border-color: #4a4a7a; background: #222240; }
+.furn-card.active { border-color: #7a9aff; background: #202045; }
+.furn-name { font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15); }
+.furn-dims { font-size: 10px; color: #556; margin-top: 2px; padding-left: 16px; }
+#info-box { padding: 10px 12px; border-top: 1px solid #2a2a4a; background: #0f0f20; flex-shrink: 0; }
+#info-lbl { font-size: 10px; color: #445; margin-bottom: 4px; }
+#info-content { font-size: 11px; color: #99a; line-height: 1.7; min-height: 58px; }
+#rotate-btn { width: 100%; margin-top: 7px; padding: 5px; background: #252550; border: 1px solid #3a3a6a; color: #9ab; border-radius: 4px; cursor: pointer; font-size: 11px; display: none; }
+#rotate-btn:hover { background: #323268; }
+#legend { padding: 8px 12px; border-top: 1px solid #1a1a30; font-size: 10px; color: #445; line-height: 1.9; flex-shrink: 0; }
+.leg { display: flex; align-items: center; gap: 6px; }
+.leg-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
+#canvas-area { flex: 1; overflow: auto; background: #090912; padding: 24px; }
+canvas { cursor: grab; display: block; }
+canvas.dragging { cursor: grabbing; }
+#add-btn{width:calc(100% - 24px);margin:0 12px 10px;padding:6px;background:#1e3a1e;border:1px solid #2a5a2a;color:#7cc87c;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.5px}#add-btn:hover{background:#254a25}#delete-btn{width:100%;margin-top:6px;padding:5px;background:#3a1a1a;border:1px solid #6a2a2a;color:#cc7777;border-radius:4px;cursor:pointer;font-size:11px;display:none}#delete-btn:hover{background:#4a2222}#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}#modal-overlay.open{display:flex}#modal{background:#141428;border:1px solid #3a3a6a;border-radius:8px;padding:20px;width:260px}#modal h3{font-size:13px;font-weight:600;color:#c8d8f8;margin-bottom:14px}.mfield{margin-bottom:10px}.mfield label{display:block;font-size:10px;color:#667;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}.mfield input[type=text],.mfield input[type=number]{width:100%;padding:6px 8px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;color:#dde;font-size:12px;outline:none}.mfield input:focus{border-color:#5566aa}.mfield input[type=color]{width:100%;height:32px;padding:2px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer}.mrow{display:flex;gap:8px}.mrow .mfield{flex:1}.mbtns{display:flex;gap:8px;margin-top:14px}.mbtns button{flex:1;padding:7px;border-radius:4px;font-size:12px;cursor:pointer;border:1px solid}#modal-ok{background:#1e3a1e;border-color:#3a7a3a;color:#7cc87c;font-weight:600}#modal-ok:hover{background:#254a25}#modal-cancel{background:#1a1a30;border-color:#2a2a4a;color:#778}#modal-cancel:hover{background:#222240}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#127968; Living Room Planner</h1>
+  <span class="hint">1 block = 10 cm &nbsp;&#183;&nbsp; Drag to move &nbsp;&#183;&nbsp; Right-click to rotate &nbsp;&#183;&nbsp; Red = blocked</span>
+</header>
+<div id="main">
+  <div id="panel">
+    <div id="panel-top">
+      <h2>Furniture</h2>
+      <div id="furniture-list"></div>
+    </div>
+    <button id="add-btn" onclick="openModal()">+ Add Furniture</button>
+    <div id="info-box">
+      <div id="info-lbl">SELECTED</div>
+      <div id="info-content">&#8212;</div>
+      <button id="rotate-btn" onclick="rotateSelected()">&#8635; Rotate 90&deg;</button>
+      <button id="delete-btn" onclick="deleteSelected()">&#10005; Remove</button>
+    </div>
+    <div id="legend">
+      <div class="leg"><span class="leg-swatch" style="background:#13132a"></span>Room floor</div>
+      <div class="leg"><span class="leg-swatch" style="background:#080810"></span>Column / fixed structure</div>
+      <div class="leg"><span class="leg-swatch" style="background:rgba(140,30,30,0.4)"></span>Door swing zone</div>
+      <div class="leg"><span class="leg-swatch" style="background:#ffcc44;height:2px;margin-top:5px"></span>Door arc</div>
+    </div>
+  </div>
+  <div id="canvas-area">
+    <canvas id="c"></canvas>
+  </div>
+</div>
+<script>
+const S = 1.6, M = 60;
+function px(c) { return c * S; }
+function cm(p) { return p / S; }
+
+// Dimensions:
+//   Total width  = 108 (column) + 680 (room) = 788 cm
+//   Total height = 420 cm  (360 navigable + 60 fixed structure at south)
+const RW = 788;   // total width
+const RH = 420;   // total height (room goes full 420; fixed structure is inside at south)
+
+// Room polygon — entire 420cm height; fixed structure handled as void overlay
+const ROOM_POLY = [
+  [108,   0],   // column top-right
+  [RW,    0],   // top-right
+  [RW,   RH],   // bottom-right  (south wall at y=420)
+  [  0,  RH],   // bottom-left
+  [  0, 120],   // left wall junction  (300cm left wall: 420-120)
+  [108, 120],   // column base
+];
+
+// Black blocked zones
+const BLACK_ZONES = [
+  { x:  0, y:  0, w:108, h:180, label:'Column',          sub:'108x180cm' },
+  { x:428, y:360, w:360, h: 60, label:'Fixed structure', sub:'360x60cm'  },
+];
+
+// Doors:
+//   Top-right : hinge (788,0)   — north wall, swings south into room
+//   Bottom    : hinge (428,420) — south wall, left edge of fixed structure, swings north
+const DOORS = [
+  { hx:RW,  hy:  0, r:90,
+    aStart:Math.PI,     aEnd:Math.PI/2,     ccw:true,
+    leafClosed:[[698,0],[RW,0]],  leafOpen:[[RW,0],[RW,90]],
+    zone:{x:698, y:  0, w:90, h:90} },
+  { hx:428, hy: RH, r:90,
+    aStart:Math.PI,     aEnd:3*Math.PI/2,   ccw:false,
+    leafClosed:[[428,RH],[338,RH]], leafOpen:[[428,RH],[428,330]],
+    zone:{x:338, y:330, w:90, h:90} },
+];
+const DOOR_ZONES = DOORS.map(d => d.zone);
+
+// Collision voids
+const VOID_ZONES = [
+  { x:  0, y:  0, w:108, h:180 },          // column
+  { x:428, y:360, w:360, h: 60 },          // fixed structure (south, 360x60)
+];
+
+// Furniture
+const FURNITURE = [
+  { id:'couch',        name:'L-Couch',       color:'#909090', type:'L',
+    w:250, h:200, parts:[{x:0,y:0,w:250,h:95},{x:155,y:95,w:95,h:105}],
+    px:120, py:20, rot:0 },
+  { id:'diningtable',  name:'Dining Table',  color:'#7a4e2a', type:'rect', w:140, h:90,  px:488, py:30,  rot:0 },
+  { id:'desk',         name:'Desk',          color:'#e8e8e0', type:'rect', w:120, h:60,  px:488, py:150, rot:0 },
+  { id:'tvtable',      name:'TV Table',      color:'#1e1208', type:'rect', w:168, h:35,  px:120, py:200, rot:0 },
+  { id:'bookshelf1',   name:'Bookshelf 1',   color:'#1c1c1c', type:'rect', w:72,  h:40,  px:638, py:175, rot:0 },
+  { id:'bookshelf2',   name:'Bookshelf 2',   color:'#e8e8e0', type:'rect', w:100, h:45,  px:638, py:225, rot:0 },
+  { id:'shoestorage1', name:'Shoe Storage 1',color:'#1c1c1c', type:'rect', w:110, h:24,  px:120, py:150, rot:0 },
+  { id:'shoestorage2', name:'Shoe Storage 2',color:'#c8a064', type:'rect', w:60,  h:25,  px:488, py:240, rot:0 },
+  { id:'drawer1',      name:'Drawer',        color:'#e8e8e0', type:'rect', w:72,  h:40,  px:120, py:240, rot:0 },
+  { id:'mobiledrawer', name:'Mobile Drawer', color:'#c8a064', type:'rect', w:50,  h:30,  px:20,  py:240, rot:0 },
+  { id:'mesh',         name:'Mesh',          color:'#e8e8e0', type:'mesh', w:54,  h:44,  px:638, py:110, rot:0 },
+  { id:'fabricdrawer', name:'Fabric Drawer', color:'#d4b896', type:'rect', w:86,  h:30,  px:638, py:160, rot:0 },
+  { id:'babybjorn',    name:'BabyBjorn',     color:'#b8c0c8', type:'rect', w:18,  h:26,  px:200, py:200, rot:0 },
+  { id:'mirror',       name:'Mirror',        color:'#d0dde8', type:'rect', w:16,  h:2,   px:200, py:240, rot:0 },
+];
+
+// Canvas
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+canvas.width  = px(RW) + M*2;
+canvas.height = px(RH) + M*2;
+const OX = M, OY = M;
+
+let drag=null, dOffX=0, dOffY=0, selId=null, isDragInvalid=false, lastVX=0, lastVY=0;
+
+function pointInPoly(poly, x, y) {
+  let inside=false;
+  for (let i=0,j=poly.length-1; i<poly.length; j=i++) {
+    const [xi,yi]=poly[i],[xj,yj]=poly[j];
+    if (((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+function aabbHit(ax,ay,aw,ah,bx,by,bw,bh){ return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by; }
+
+function rotated(f) {
+  const r=((f.rot%4)+4)%4;
+  if (r===0) return {w:f.w,h:f.h,parts:f.type==='L'?f.parts:null};
+  let W=f.w,H=f.h;
+  for(let i=0;i<r;i++) [W,H]=[H,W];
+  if (f.type!=='L') return {w:W,h:H,parts:null};
+  let bw=f.w,bh=f.h,parts=f.parts.map(p=>({...p}));
+  for(let i=0;i<r;i++){
+    parts=parts.map(p=>({x:bh-p.y-p.h,y:p.x,w:p.h,h:p.w}));
+    [bw,bh]=[bh,bw];
+  }
+  return {w:W,h:H,parts};
+}
+
+function samplePoints(x,y,w,h){
+  return [[x,y],[x+w,y],[x,y+h],[x+w,y+h],[x+w/2,y+h/2],
+          [x+w/2,y],[x+w/2,y+h],[x,y+h/2],[x+w,y+h/2],
+          [x+w/4,y],[x+3*w/4,y],[x+w/4,y+h],[x+3*w/4,y+h],
+          [x,y+h/4],[x,y+3*h/4],[x+w,y+h/4],[x+w,y+3*h/4]];
+}
+
+function isValid(f) {
+  const {w,h,parts}=rotated(f);
+  const pieces=f.type==='L'
+    ?parts.map(p=>({x:f.px+p.x,y:f.py+p.y,w:p.w,h:p.h}))
+    :[{x:f.px,y:f.py,w,h}];
+  for(const p of pieces){
+    if(p.x<0||p.y<0||p.x+p.w>RW||p.y+p.h>RH) return false;
+    for(const [cx,cy] of samplePoints(p.x,p.y,p.w,p.h))
+      if(!pointInPoly(ROOM_POLY,cx,cy)) return false;
+    for(const z of DOOR_ZONES) if(aabbHit(p.x,p.y,p.w,p.h,z.x,z.y,z.w,z.h)) return false;
+    for(const z of VOID_ZONES) if(aabbHit(p.x,p.y,p.w,p.h,z.x,z.y,z.w,z.h)) return false;
+  }
+  return true;
+}
+
+function isLight(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return (0.299*r+0.587*g+0.114*b)/255>0.48;
+}
+function labelColor(hex,inv){ return inv?'#ff9999':(isLight(hex)?'#1a1a1a':'#eeeeee'); }
+function borderColor(hex,sel,inv){
+  if(inv) return '#ff6666';
+  if(sel) return isLight(hex)?'#333':'#fff';
+  return isLight(hex)?'rgba(0,0,0,0.3)':'rgba(255,255,255,0.35)';
+}
+
+function wallLabel(x1,y1,x2,y2,text,offX,offY){
+  const cx=OX+px((x1+x2)/2)+offX, cy=OY+px((y1+y2)/2)+offY;
+  ctx.save();
+  ctx.font='bold 10px sans-serif';
+  const tw=ctx.measureText(text).width;
+  ctx.fillStyle='rgba(8,8,22,0.85)';
+  ctx.fillRect(cx-tw/2-4,cy-7,tw+8,14);
+  ctx.strokeStyle='#3a5a7a'; ctx.lineWidth=0.5;
+  ctx.strokeRect(cx-tw/2-4,cy-7,tw+8,14);
+  ctx.fillStyle='#88aacc';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text,cx,cy);
+  const dx=px(x2-x1),dy=px(y2-y1),L=Math.sqrt(dx*dx+dy*dy)||1;
+  const tx=-dy/L*5,ty=dx/L*5;
+  ctx.strokeStyle='#4a6a8a'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(OX+px(x1)+tx,OY+px(y1)+ty); ctx.lineTo(OX+px(x1)-tx,OY+px(y1)-ty);
+  ctx.moveTo(OX+px(x2)+tx,OY+px(y2)+ty); ctx.lineTo(OX+px(x2)-tx,OY+px(y2)-ty);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function roomPath(){
+  ctx.beginPath();
+  ROOM_POLY.forEach(([x,y],i)=>i===0?ctx.moveTo(OX+px(x),OY+px(y)):ctx.lineTo(OX+px(x),OY+px(y)));
+  ctx.closePath();
+}
+
+function drawRoom(){
+  ctx.save(); roomPath(); ctx.fillStyle='#12122a'; ctx.fill(); ctx.clip();
+  ctx.strokeStyle='#191932'; ctx.lineWidth=0.5;
+  for(let x=0;x<=RW;x+=10){ctx.beginPath();ctx.moveTo(OX+px(x),OY);ctx.lineTo(OX+px(x),OY+px(RH));ctx.stroke();}
+  for(let y=0;y<=RH;y+=10){ctx.beginPath();ctx.moveTo(OX,OY+px(y));ctx.lineTo(OX+px(RW),OY+px(y));ctx.stroke();}
+  ctx.strokeStyle='#1e1e40'; ctx.lineWidth=1;
+  for(let x=0;x<=RW;x+=100){ctx.beginPath();ctx.moveTo(OX+px(x),OY);ctx.lineTo(OX+px(x),OY+px(RH));ctx.stroke();}
+  for(let y=0;y<=RH;y+=100){ctx.beginPath();ctx.moveTo(OX,OY+px(y));ctx.lineTo(OX+px(RW),OY+px(y));ctx.stroke();}
+  ctx.restore();
+
+  // Door zones
+  DOORS.forEach(d=>{
+    const z=d.zone; ctx.save();
+    ctx.fillStyle='rgba(140,30,30,0.22)';
+    ctx.fillRect(OX+px(z.x),OY+px(z.y),px(z.w),px(z.h));
+    ctx.save(); ctx.strokeStyle='rgba(200,60,60,0.22)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.rect(OX+px(z.x),OY+px(z.y),px(z.w),px(z.h)); ctx.clip();
+    for(let k=-px(z.h);k<px(z.w)+px(z.h);k+=10){
+      ctx.beginPath();ctx.moveTo(OX+px(z.x)+k,OY+px(z.y));ctx.lineTo(OX+px(z.x)+k+px(z.h),OY+px(z.y)+px(z.h));ctx.stroke();
+    }
+    ctx.restore();
+    ctx.strokeStyle='rgba(220,80,80,0.5)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.strokeRect(OX+px(z.x),OY+px(z.y),px(z.w),px(z.h)); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,130,130,0.7)'; ctx.font='9px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Door zone',OX+px(z.x)+px(z.w)/2,OY+px(z.y)+px(z.h)/2);
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(OX+px(d.hx),OY+px(d.hy));
+    ctx.arc(OX+px(d.hx),OY+px(d.hy),px(d.r),d.aStart,d.aEnd,d.ccw); ctx.closePath();
+    ctx.fillStyle='rgba(255,200,60,0.06)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(OX+px(d.hx),OY+px(d.hy),px(d.r),d.aStart,d.aEnd,d.ccw);
+    ctx.strokeStyle='rgba(255,200,60,0.65)'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(OX+px(d.leafClosed[0][0]),OY+px(d.leafClosed[0][1]));
+    ctx.lineTo(OX+px(d.leafClosed[1][0]),OY+px(d.leafClosed[1][1]));
+    ctx.strokeStyle='#ffcc44'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(OX+px(d.leafOpen[0][0]),OY+px(d.leafOpen[0][1]));
+    ctx.lineTo(OX+px(d.leafOpen[1][0]),OY+px(d.leafOpen[1][1]));
+    ctx.strokeStyle='rgba(255,180,50,0.45)'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(OX+px(d.hx),OY+px(d.hy),4,0,Math.PI*2);
+    ctx.fillStyle='#ffcc44'; ctx.fill();
+    ctx.restore();
+  });
+
+  // Black zones
+  BLACK_ZONES.forEach(z=>{
+    ctx.fillStyle='#080810';
+    ctx.fillRect(OX+px(z.x),OY+px(z.y),px(z.w),px(z.h));
+    ctx.strokeStyle='#1c1c1c'; ctx.lineWidth=1;
+    ctx.strokeRect(OX+px(z.x),OY+px(z.y),px(z.w),px(z.h));
+    ctx.fillStyle='#2e2e2e'; ctx.font='bold 10px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(z.label,OX+px(z.x)+px(z.w)/2,OY+px(z.y)+px(z.h)/2-(z.sub?6:0));
+    if(z.sub){ctx.font='9px sans-serif';ctx.fillStyle='#252525';ctx.fillText(z.sub,OX+px(z.x)+px(z.w)/2,OY+px(z.y)+px(z.h)/2+7);}
+  });
+
+  ctx.fillStyle='#2a2a3a'; ctx.font='11px sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('KITCHEN',OX-30,OY+px(90));
+
+  roomPath(); ctx.strokeStyle='#7788bb'; ctx.lineWidth=3; ctx.stroke();
+
+  // Wall labels
+  wallLabel(  0,   0, 108,   0, '108 cm',  0, -42);   // column top
+  wallLabel(108,   0,  RW,   0, '680 cm',  0, -42);   // room top
+  wallLabel(  0,   0,  RW,   0, '788 cm',  0, -26);   // total top
+  wallLabel(108,   0,  RW,   0, '680 cm',  0, -22);   // inner top wall
+  wallLabel( RW,   0,  RW,  RH, '420 cm', +22,  0);   // right wall total
+  wallLabel( RW,   0,  RW, 360, '360 cm', +42,  0);   // right wall navigable
+  wallLabel( RW, 360,  RW,  RH,  '60 cm', +42,  0);   // structure depth
+  wallLabel( RW,  RH,   0,  RH, '788 cm',  0, +22);   // full south wall
+  wallLabel(  0,  RH,   0, 120, '300 cm', -22,  0);   // left wall
+  wallLabel(  0, 120, 108, 120, '108 cm',  0, -18);   // column junction
+  wallLabel(428, 360,  RW, 360, '360 cm',  0, +14);   // structure width
+}
+
+function drawMeshX(fw,fh){
+  const step=px(10); ctx.save();
+  ctx.strokeStyle='rgba(80,80,80,0.38)'; ctx.lineWidth=0.9;
+  for(let gy=step/2;gy<fh;gy+=step)
+    for(let gx=step/2;gx<fw;gx+=step){
+      const s=3.2;
+      ctx.beginPath();ctx.moveTo(gx-s,gy-s);ctx.lineTo(gx+s,gy+s);
+      ctx.moveTo(gx+s,gy-s);ctx.lineTo(gx-s,gy+s);ctx.stroke();
+    }
+  ctx.restore();
+}
+
+function drawFurniture(f){
+  const sel=f.id===selId,inv=sel&&isDragInvalid;
+  const {w,h,parts}=rotated(f);
+  ctx.save(); ctx.translate(OX+px(f.px),OY+px(f.py));
+  const light=isLight(f.color),bc=borderColor(f.color,sel,inv),tc=labelColor(f.color,inv);
+  function drawPiece(rx,ry,rw,rh){
+    ctx.fillStyle=inv?'rgba(200,34,34,0.85)':(light?f.color+'ee':f.color+'dd');
+    ctx.fillRect(px(rx),px(ry),px(rw),px(rh));
+    ctx.strokeStyle=bc; ctx.lineWidth=sel?2:1;
+    ctx.strokeRect(px(rx),px(ry),px(rw),px(rh));
+  }
+  if(f.type==='L'){
+    parts.forEach(p=>drawPiece(p.x,p.y,p.w,p.h));
+    ctx.fillStyle=tc; ctx.font='bold 11px sans-serif';
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(f.name,px(8),px(8));
+    ctx.font='9px sans-serif'; ctx.fillStyle=light?'rgba(0,0,0,0.45)':'rgba(255,255,255,0.5)';
+    ctx.fillText('250x200cm',px(8),px(22));
+  } else {
+    drawPiece(0,0,w,h);
+    const fw=px(w),fh=px(h);
+    if(!inv&&f.type==='mesh'){
+      ctx.save();ctx.beginPath();ctx.rect(0,0,fw,fh);ctx.clip();
+      drawMeshX(fw,fh);ctx.restore();
+    }
+    const fs=Math.max(8,Math.min(11,fh*0.28));
+    ctx.fillStyle=tc; ctx.font=fs+'px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(f.name,fw/2,fh/2-(fh>28?5:0));
+    if(fh>26){
+      ctx.font='8px sans-serif';
+      ctx.fillStyle=light?'rgba(0,0,0,0.4)':'rgba(255,255,255,0.45)';
+      ctx.fillText(w+'x'+h+'cm',fw/2,fh/2+9);
+    }
+  }
+  if(sel){
+    ctx.shadowColor=inv?'#ff4444':'#6688ff'; ctx.shadowBlur=14;
+    ctx.strokeStyle=inv?'#ff6666':'#aabbff'; ctx.lineWidth=2;
+    ctx.strokeRect(-2,-2,px(w)+4,px(h)+4); ctx.shadowBlur=0;
+  }
+  if(inv){
+    ctx.fillStyle='rgba(255,0,0,0.1)'; ctx.fillRect(-2,-2,px(w)+4,px(h)+4);
+    ctx.fillStyle='#ff9999'; ctx.font='bold 9px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('blocked',px(w)/2,px(h)/2+13);
+  }
+  ctx.restore();
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawRoom();
+  FURNITURE.forEach(f=>drawFurniture(f));
+}
+
+function getPos(e){const r=canvas.getBoundingClientRect();return{x:cm(e.clientX-r.left-OX),y:cm(e.clientY-r.top-OY)};}
+function hitTest(f,mx,my){
+  const {w,h,parts}=rotated(f),rx=mx-f.px,ry=my-f.py;
+  if(f.type==='L') return parts.some(p=>rx>=p.x&&rx<=p.x+p.w&&ry>=p.y&&ry<=p.y+p.h);
+  return rx>=0&&rx<=w&&ry>=0&&ry<=h;
+}
+
+canvas.addEventListener('mousedown',e=>{
+  if(e.button===2) return;
+  const {x,y}=getPos(e);
+  for(let i=FURNITURE.length-1;i>=0;i--){
+    if(hitTest(FURNITURE[i],x,y)){
+      drag=FURNITURE[i]; selId=drag.id;
+      dOffX=x-drag.px; dOffY=y-drag.py;
+      lastVX=drag.px; lastVY=drag.py; isDragInvalid=false;
+      FURNITURE.push(FURNITURE.splice(i,1)[0]);
+      canvas.classList.add('dragging');
+      updatePanel(); draw(); return;
+    }
+  }
+  selId=null; updatePanel(); draw();
+});
+
+canvas.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const {x,y}=getPos(e);
+  drag.px=x-dOffX; drag.py=y-dOffY;
+  isDragInvalid=!isValid(drag);
+  if(!isDragInvalid){lastVX=drag.px;lastVY=drag.py;}
+  draw(); updatePanel();
+});
+
+function endDrag(){
+  if(drag&&isDragInvalid){drag.px=lastVX;drag.py=lastVY;isDragInvalid=false;}
+  drag=null; canvas.classList.remove('dragging'); draw(); updatePanel();
+}
+canvas.addEventListener('mouseup',endDrag);
+canvas.addEventListener('mouseleave',endDrag);
+
+canvas.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  const {x,y}=getPos(e);
+  for(let i=FURNITURE.length-1;i>=0;i--){
+    if(hitTest(FURNITURE[i],x,y)){selId=FURNITURE[i].id;rotateSelected();return;}
+  }
+});
+
+function rotateSelected(){
+  const f=FURNITURE.find(x=>x.id===selId); if(!f) return;
+  const prev=f.rot; f.rot=((f.rot||0)+1)%4;
+  if(!isValid(f)) f.rot=prev;
+  updatePanel(); draw();
+}
+
+function updatePanel(){
+  document.querySelectorAll('.furn-card').forEach(el=>el.classList.toggle('active',el.dataset.id===selId));
+  const info=document.getElementById('info-content'),btn=document.getElementById('rotate-btn');
+  if(!selId){info.textContent='—';btn.style.display='none';document.getElementById('delete-btn').style.display='none';return;}
+  const f=FURNITURE.find(x=>x.id===selId); if(!f) return;
+  const {w,h}=rotated(f);
+  const st=isDragInvalid
+    ?'<span style="color:#ff7777">&#9888; Blocked</span>'
+    :'<span style="color:#77cc77">&#10003; OK</span>';
+  info.innerHTML='<strong>'+f.name+'</strong><br>'+w+'&times;'+h+' cm<br>'+
+    Math.round(f.px)+', '+Math.round(f.py)+' cm &nbsp;'+st+'<br>Rot: '+((f.rot||0)*90)+'&deg;';
+  btn.style.display='block';
+  document.getElementById('delete-btn').style.display='block';
+}
+
+const list=document.getElementById('furniture-list');
+FURNITURE.forEach(f=>{
+  const card=document.createElement('div');
+  card.className='furn-card'; card.dataset.id=f.id;
+  card.innerHTML='<div class="furn-name"><span class="swatch" style="background:'+f.color+'"></span>'+f.name+'</div>'+
+    '<div class="furn-dims">'+f.w+'&times;'+f.h+' cm</div>';
+  card.addEventListener('click',()=>{selId=f.id;updatePanel();draw();});
+  list.appendChild(card);
+});
+
+draw();
+
+function openModal(){document.getElementById('modal-overlay').classList.add('open');setTimeout(()=>document.getElementById('f-name').focus(),50);}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')closeModal();
+  if(e.key==='Enter'&&document.getElementById('modal-overlay').classList.contains('open'))addCustom();
+});
+function addCustom(){
+  const name=document.getElementById('f-name').value.trim()||'Custom';
+  const w=Math.max(1,parseInt(document.getElementById('f-w').value)||60);
+  const h=Math.max(1,parseInt(document.getElementById('f-d').value)||40);
+  const color=document.getElementById('f-color').value;
+  const id='custom_'+Date.now();
+  const f={id,name,color,type:'rect',w,h,px:130,py:130,rot:0};
+  FURNITURE.push(f);
+  addCard(f);
+  closeModal();
+  selId=id; updatePanel(); draw();
+  document.getElementById('f-name').value='';
+}
+function addCard(f){
+  const card=document.createElement('div');
+  card.className='furn-card'; card.dataset.id=f.id;
+  card.innerHTML='<div class="furn-name"><span class="swatch" style="background:'+f.color+'"></span>'+f.name+'</div><div class="furn-dims">'+f.w+'&times;'+f.h+' cm</div>';
+  card.addEventListener('click',()=>{selId=f.id;updatePanel();draw();});
+  document.getElementById('furniture-list').appendChild(card);
+}
+function deleteSelected(){
+  if(!selId)return;
+  const idx=FURNITURE.findIndex(f=>f.id===selId);
+  if(idx===-1)return;
+  FURNITURE.splice(idx,1);
+  const card=document.querySelector('.furn-card[data-id="'+selId+'"]');
+  if(card)card.remove();
+  selId=null; updatePanel(); draw();
+}
+</script>
+<div id="modal-overlay"><div id="modal"><h3>Add Furniture</h3><div class="mfield"><label>Name</label><input type="text" id="f-name" placeholder="e.g. Side Table"/></div><div class="mrow"><div class="mfield"><label>Width (cm)</label><input type="number" id="f-w" min="1" max="700" value="60"/></div><div class="mfield"><label>Depth (cm)</label><input type="number" id="f-d" min="1" max="700" value="40"/></div></div><div class="mfield"><label>Color</label><input type="color" id="f-color" value="#6a8a9a"/></div><div class="mbtns"><button id="modal-cancel" onclick="closeModal()">Cancel</button><button id="modal-ok" onclick="addCustom()">Add</button></div></div></div>
+</body>
+</html>

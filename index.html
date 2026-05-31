@@ -425,6 +425,7 @@ function hitTest(f,mx,my){
   return rx>=0&&rx<=w&&ry>=0&&ry<=h;
 }
 
+console.log("AT_INPUT_SECTION");
 // Input: shared logic
 function _xy(clientX, clientY) {
   const r = canvas.getBoundingClientRect();
@@ -454,6 +455,7 @@ function _moveDrag(cx, cy) {
   if (!isDragInvalid) { lastVX = drag.px; lastVY = drag.py; }
   draw(); updatePanel();
 }
+console.log("AT_ENDDRAG");
 function endDrag() {
   if (drag && isDragInvalid) { drag.px = lastVX; drag.py = lastVY; isDragInvalid = false; }
   drag = null; canvas.classList.remove('dragging'); draw(); updatePanel();
@@ -543,7 +545,7 @@ function openModal(){
   setTimeout(()=>document.getElementById('f-name').focus(),50);
 }
 function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
-document.getElementById('modal-overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+document.addEventListener('click', function(e){ if(e.target && e.target.id==='modal-overlay') closeModal(); });
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape') closeModal();
   if(e.key==='Enter'&&document.getElementById('modal-overlay').classList.contains('open')) addCustom();
@@ -577,10 +579,8 @@ function buildList() {
   list.innerHTML = '';
   FURNITURE.forEach(function(f) { addCard(f); });
 }
-console.log("PRE_BUILD _mob="+_mob+" FURNITURE="+FURNITURE.length);
 buildList();
-console.log("POST_BUILD list="+document.getElementById("furniture-list").children.length);
-try{draw();}catch(e){console.error("DRAW_ERR",e.message);}
+draw();
 
 // Rebuild list if it ever ends up empty (e.g. after Firestore sync clears it)
 document.addEventListener('visibilitychange', function() {

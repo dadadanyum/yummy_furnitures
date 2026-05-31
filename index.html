@@ -57,12 +57,11 @@ canvas.dragging { cursor: grabbing; }
 }
 #mob-overlay {
   display: none; position: fixed; inset: 0; z-index: 49;
-  pointer-events: none; background: transparent; transition: background .25s;
+  background: transparent; transition: background .25s;
 }
-#mob-overlay.on { pointer-events: auto; background: rgba(0,0,0,.45); }
+#mob-overlay.on { display: block; pointer-events: auto; background: rgba(0,0,0,.45); }
 @media (max-width: 900px) {
   #mob-fab { display: block; }
-  #mob-overlay { display: block; }
 }
 
 </style>
@@ -98,12 +97,11 @@ canvas.dragging { cursor: grabbing; }
 }
 #mob-overlay {
   display: none; position: fixed; inset: 0; z-index: 49;
-  pointer-events: none; background: transparent; transition: background .25s;
+  background: transparent; transition: background .25s;
 }
-#mob-overlay.on { pointer-events: auto; background: rgba(0,0,0,.45); }
+#mob-overlay.on { display: block; pointer-events: auto; background: rgba(0,0,0,.45); }
 @media (max-width: 900px) {
   #mob-fab { display: block; }
-  #mob-overlay { display: block; }
 }
 
 </style>

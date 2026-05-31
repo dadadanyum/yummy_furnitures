@@ -11,7 +11,7 @@ header { padding: 10px 20px; background: #141428; border-bottom: 1px solid #2a2a
 header h1 { font-size: 15px; font-weight: 600; color: #c8d8f8; }
 .hint { font-size: 11px; color: #556; }
 #main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-#panel { width: 215px; background: #141428; border-right: 1px solid #2a2a4a; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; height: 100%; }
+#panel { width: 215px; background: #141428; border-right: 1px solid #2a2a4a; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; min-height: 0; }
 #panel-top { padding: 12px; overflow-y: auto; flex: 1; min-height: 0; }
 #panel h2 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #445; margin-bottom: 10px; }
 .furn-card { background: #1c1c38; border-radius: 5px; padding: 7px 10px; margin-bottom: 5px; cursor: pointer; border: 1px solid #2a2a4a; transition: all 0.12s; user-select: none; }
@@ -570,8 +570,21 @@ function addCard(f){
 }
 
 // Build panel list and initial draw
-FURNITURE.forEach(f=>addCard(f));
+function buildList() {
+  var list = document.getElementById('furniture-list');
+  if (!list) return;
+  list.innerHTML = '';
+  FURNITURE.forEach(function(f) { addCard(f); });
+}
+buildList();
 draw();
+
+// Rebuild list if it ever ends up empty (e.g. after Firestore sync clears it)
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && document.getElementById('furniture-list').children.length === 0) {
+    buildList();
+  }
+});
 
 </script>
 <div id="modal-overlay"><div id="modal"><h3>Add Furniture</h3><div class="mfield"><label>Name</label><input type="text" id="f-name" placeholder="e.g. Side Table"/></div><div class="mrow"><div class="mfield"><label>Width (cm)</label><input type="number" id="f-w" min="1" max="700" value="60"/></div><div class="mfield"><label>Depth (cm)</label><input type="number" id="f-d" min="1" max="700" value="40"/></div></div><div class="mfield"><label>Color</label><input type="color" id="f-color" value="#6a8a9a"/></div><div class="mbtns"><button id="modal-cancel" onclick="closeModal()">Cancel</button><button id="modal-ok" onclick="addCustom()">Add</button></div></div></div>

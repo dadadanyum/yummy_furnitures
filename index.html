@@ -502,6 +502,77 @@ function mobPanel() {
   p.classList.toggle('show');
 }
 
+function rotateSelected(){
+  const f=FURNITURE.find(x=>x.id===selId); if(!f) return;
+  const prev=f.rot; f.rot=((f.rot||0)+1)%4;
+  if(!isValid(f)) f.rot=prev;
+  updatePanel(); draw();
+}
+
+function deleteSelected(){
+  if(!selId) return;
+  const idx=FURNITURE.findIndex(f=>f.id===selId);
+  if(idx===-1) return;
+  FURNITURE.splice(idx,1);
+  const card=document.querySelector('.furn-card[data-id="'+selId+'"]');
+  if(card) card.remove();
+  selId=null; updatePanel(); draw();
+}
+
+function updatePanel(){
+  document.querySelectorAll('.furn-card').forEach(el=>el.classList.toggle('active',el.dataset.id===selId));
+  const info=document.getElementById('info-content');
+  const btn=document.getElementById('rotate-btn');
+  const del=document.getElementById('delete-btn');
+  if(!selId){
+    info.textContent='—'; btn.style.display='none'; del.style.display='none'; return;
+  }
+  const f=FURNITURE.find(x=>x.id===selId); if(!f) return;
+  const {w,h}=rotated(f);
+  const st=isDragInvalid
+    ?'<span style="color:#ff7777">&#9888; Blocked</span>'
+    :'<span style="color:#77cc77">&#10003; OK</span>';
+  info.innerHTML='<strong>'+f.name+'</strong><br>'+w+'&times;'+h+' cm<br>'+
+    Math.round(f.px)+', '+Math.round(f.py)+' cm &nbsp;'+st+'<br>Rot: '+((f.rot||0)*90)+'&deg;';
+  btn.style.display='block'; del.style.display='block';
+}
+
+function openModal(){
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('f-name').focus(),50);
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeModal();
+  if(e.key==='Enter'&&document.getElementById('modal-overlay').classList.contains('open')) addCustom();
+});
+
+function addCustom(){
+  const name=document.getElementById('f-name').value.trim()||'Custom';
+  const w=Math.max(1,parseInt(document.getElementById('f-w').value)||60);
+  const h=Math.max(1,parseInt(document.getElementById('f-d').value)||40);
+  const color=document.getElementById('f-color').value;
+  const id='custom_'+Date.now();
+  const f={id,name,color,type:'rect',w,h,px:130,py:130,rot:0};
+  FURNITURE.push(f); addCard(f);
+  closeModal(); selId=id; updatePanel(); draw();
+  document.getElementById('f-name').value='';
+}
+
+function addCard(f){
+  const card=document.createElement('div');
+  card.className='furn-card'; card.dataset.id=f.id;
+  card.innerHTML='<div class="furn-name"><span class="swatch" style="background:'+f.color+'"></span>'+f.name+'</div>'+
+    '<div class="furn-dims">'+f.w+'&times;'+f.h+' cm</div>';
+  card.addEventListener('click',()=>{ selId=f.id; updatePanel(); draw(); });
+  document.getElementById('furniture-list').appendChild(card);
+}
+
+// Build panel list and initial draw
+FURNITURE.forEach(f=>addCard(f));
+draw();
+
 </script>
 <div id="modal-overlay"><div id="modal"><h3>Add Furniture</h3><div class="mfield"><label>Name</label><input type="text" id="f-name" placeholder="e.g. Side Table"/></div><div class="mrow"><div class="mfield"><label>Width (cm)</label><input type="number" id="f-w" min="1" max="700" value="60"/></div><div class="mfield"><label>Depth (cm)</label><input type="number" id="f-d" min="1" max="700" value="40"/></div></div><div class="mfield"><label>Color</label><input type="color" id="f-color" value="#6a8a9a"/></div><div class="mbtns"><button id="modal-cancel" onclick="closeModal()">Cancel</button><button id="modal-ok" onclick="addCustom()">Add</button></div></div></div>
 <script>

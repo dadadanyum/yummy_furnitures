@@ -31,77 +31,81 @@ header h1 { font-size: 15px; font-weight: 600; color: #c8d8f8; }
 #canvas-area { flex: 1; overflow: auto; background: #090912; padding: 24px; }
 canvas { cursor: grab; display: block; touch-action: none; }
 canvas.dragging { cursor: grabbing; }
-@media (max-width: 900px) {
-  header { padding: 8px 12px; flex-wrap: wrap; gap: 8px; }
-  header h1 { font-size: 13px; }
-  .hint { display: none; }
-  #sync-lbl { font-size: 9px; }
-  #panel { position: fixed; bottom: 0; left: 0; right: 0; width: 100% !important;
-    max-height: 55vh; transform: translateY(100%); transition: transform .28s ease;
-    z-index: 50; border-right: none; border-top: 2px solid #3a3a6a;
-    border-radius: 16px 16px 0 0; }
-  #panel.open { transform: translateY(0); }
-  #panel-top { padding: 10px 14px; }
-  #info-box { padding: 8px 14px; }
-  #legend { display: none; }
-  #canvas-area { padding: 4px; flex: 1; overflow: hidden; display: flex; align-items: flex-start; justify-content: flex-start; }
-  #mobile-fab { display: flex !important; }
-  #mobile-overlay { display: block; }
-  #mobile-overlay.show { pointer-events: auto; background: rgba(0,0,0,.4); }
-  .furn-card { padding: 9px 12px; margin-bottom: 7px; }
-  .furn-name { font-size: 13px; }
-  .furn-dims { font-size: 11px; }
-}
-#mobile-fab { display: none; position: fixed; bottom: 24px; right: 20px;
-  width: 56px; height: 56px; border-radius: 50%; background: #2a3a6a;
-  border: 2px solid #5a6aaa; color: #c8d8ff; font-size: 24px;
-  align-items: center; justify-content: center; cursor: pointer;
-  z-index: 60; box-shadow: 0 4px 16px rgba(0,0,0,.6); user-select: none; touch-action: manipulation; }
-#mobile-overlay { display: none; position: fixed; inset: 0; z-index: 49;
-  pointer-events: none; transition: background .3s; }
 #add-btn{width:calc(100% - 24px);margin:0 12px 10px;padding:6px;background:#1e3a1e;border:1px solid #2a5a2a;color:#7cc87c;border-radius:4px;cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.5px}#add-btn:hover{background:#254a25}#delete-btn{width:100%;margin-top:6px;padding:5px;background:#3a1a1a;border:1px solid #6a2a2a;color:#cc7777;border-radius:4px;cursor:pointer;font-size:11px;display:none}#delete-btn:hover{background:#4a2222}#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}#modal-overlay.open{display:flex}#modal{background:#141428;border:1px solid #3a3a6a;border-radius:8px;padding:20px;width:260px}#modal h3{font-size:13px;font-weight:600;color:#c8d8f8;margin-bottom:14px}.mfield{margin-bottom:10px}.mfield label{display:block;font-size:10px;color:#667;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}.mfield input[type=text],.mfield input[type=number]{width:100%;padding:6px 8px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;color:#dde;font-size:12px;outline:none}.mfield input:focus{border-color:#5566aa}.mfield input[type=color]{width:100%;height:32px;padding:2px;background:#0d0d1a;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer}.mrow{display:flex;gap:8px}.mrow .mfield{flex:1}.mbtns{display:flex;gap:8px;margin-top:14px}.mbtns button{flex:1;padding:7px;border-radius:4px;font-size:12px;cursor:pointer;border:1px solid}#modal-ok{background:#1e3a1e;border-color:#3a7a3a;color:#7cc87c;font-weight:600}#modal-ok:hover{background:#254a25}#modal-cancel{background:#1a1a30;border-color:#2a2a4a;color:#778}#modal-cancel:hover{background:#222240}
+
+/* ── Mobile ── */
+@media (max-width: 900px) {
+  .hint { display: none; }
+  header h1 { font-size: 13px; }
+  #panel {
+    position: fixed; bottom: 0; left: 0; right: 0; width: 100% !important;
+    max-height: 60vh; transform: translateY(102%); transition: transform .28s ease;
+    z-index: 50; border-right: none; border-radius: 16px 16px 0 0;
+    border-top: 2px solid #3a3a6a;
+  }
+  #panel.mob-open { transform: translateY(0); }
+  #legend { display: none; }
+  #canvas-area { padding: 4px; overflow: hidden; }
+}
+#mob-fab {
+  display: none; position: fixed; bottom: 22px; right: 18px;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: #1e2a5a; border: 2px solid #4a5aaa;
+  color: #c8d8ff; font-size: 24px; line-height: 54px; text-align: center;
+  cursor: pointer; z-index: 60; box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  user-select: none; touch-action: manipulation;
+}
+#mob-overlay {
+  display: none; position: fixed; inset: 0; z-index: 49;
+  pointer-events: none; background: transparent; transition: background .25s;
+}
+#mob-overlay.on { pointer-events: auto; background: rgba(0,0,0,.45); }
+@media (max-width: 900px) {
+  #mob-fab { display: block; }
+  #mob-overlay { display: block; }
+}
+
 </style>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js">
-window.addEventListener('resize', function(){ draw(); });
-
-function togglePanel() {
-  const p = document.getElementById('panel');
-  const o = document.getElementById('mobile-overlay');
-  const open = p.classList.toggle('open');
-  o.classList.toggle('show', open);
-}
-function closePanel() {
-  document.getElementById('panel').classList.remove('open');
-  document.getElementById('mobile-overlay').classList.remove('show');
-}
-// close panel when furniture card is tapped on mobile
-document.getElementById('furniture-list').addEventListener('click', function() {
-  if (window.innerWidth < 768) closePanel();
-});
-</script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js">
-window.addEventListener('resize', function(){ draw(); });
-
-function togglePanel() {
-  const p = document.getElementById('panel');
-  const o = document.getElementById('mobile-overlay');
-  const open = p.classList.toggle('open');
-  o.classList.toggle('show', open);
-}
-function closePanel() {
-  document.getElementById('panel').classList.remove('open');
-  document.getElementById('mobile-overlay').classList.remove('show');
-}
-// close panel when furniture card is tapped on mobile
-document.getElementById('furniture-list').addEventListener('click', function() {
-  if (window.innerWidth < 768) closePanel();
-});
-</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
 #sync-dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:background .4s}
 #sync-dot.on{background:#4caf50}#sync-dot.saving{background:#ffaa00}
 #sync-lbl{font-size:10px;color:#556;margin-left:auto;transition:color .4s}
 #sync-lbl.on{color:#4caf50}#sync-lbl.saving{color:#ffaa00}
+
+/* ── Mobile ── */
+@media (max-width: 900px) {
+  .hint { display: none; }
+  header h1 { font-size: 13px; }
+  #panel {
+    position: fixed; bottom: 0; left: 0; right: 0; width: 100% !important;
+    max-height: 60vh; transform: translateY(102%); transition: transform .28s ease;
+    z-index: 50; border-right: none; border-radius: 16px 16px 0 0;
+    border-top: 2px solid #3a3a6a;
+  }
+  #panel.mob-open { transform: translateY(0); }
+  #legend { display: none; }
+  #canvas-area { padding: 4px; overflow: hidden; }
+}
+#mob-fab {
+  display: none; position: fixed; bottom: 22px; right: 18px;
+  width: 54px; height: 54px; border-radius: 50%;
+  background: #1e2a5a; border: 2px solid #4a5aaa;
+  color: #c8d8ff; font-size: 24px; line-height: 54px; text-align: center;
+  cursor: pointer; z-index: 60; box-shadow: 0 4px 16px rgba(0,0,0,.6);
+  user-select: none; touch-action: manipulation;
+}
+#mob-overlay {
+  display: none; position: fixed; inset: 0; z-index: 49;
+  pointer-events: none; background: transparent; transition: background .25s;
+}
+#mob-overlay.on { pointer-events: auto; background: rgba(0,0,0,.45); }
+@media (max-width: 900px) {
+  #mob-fab { display: block; }
+  #mob-overlay { display: block; }
+}
+
 </style>
 </head>
 <body>
@@ -130,24 +134,26 @@ document.getElementById('furniture-list').addEventListener('click', function() {
       <div class="leg"><span class="leg-swatch" style="background:#ffcc44;height:2px;margin-top:5px"></span>Door arc</div>
     </div>
   </div>
-  <div id="mobile-overlay" onclick="closePanel()"></div>
-<button id="mobile-fab" onclick="togglePanel()">&#9776;</button>
+  <div id="mob-overlay" onclick="mobClose()"></div>
+<button id="mob-fab" onclick="mobToggle()">&#9776;</button>
 <div id="canvas-area">
     <canvas id="c"></canvas>
   </div>
 </div>
 <script>
+// S scales canvas to fit screen physically — no CSS transforms needed
+const _isMob = window.innerWidth < 900;
 const RW = 788, RH = 420;
-const _avail = Math.min(window.innerWidth, window.screen.width) - 24;
-const S = Math.min(1.6, _avail / (RW + 80));
-const M = window.innerWidth < 900 ? 16 : 50;
+const S = _isMob ? Math.max(0.28, (window.innerWidth - 8) / (RW + 60)) : 1.6;
+const M = _isMob ? 14 : 60;
 function px(c) { return c * S; }
 function cm(p) { return p / S; }
 
 // Dimensions:
 //   Total width  = 108 (column) + 680 (room) = 788 cm
 //   Total height = 420 cm  (360 navigable + 60 fixed structure at south)
-// RW and RH defined above
+const RW = 788;   // total width
+const RH = 420;   // total height (room goes full 420; fixed structure is inside at south)
 
 // Room polygon — entire 420cm height; fixed structure handled as void overlay
 const ROOM_POLY = [
@@ -609,23 +615,6 @@ canvas.addEventListener('touchend', function(e) {
 canvas.addEventListener('touchcancel', function(e) {
   endDrag();
 }, { passive: false });
-
-window.addEventListener('resize', function(){ draw(); });
-
-function togglePanel() {
-  const p = document.getElementById('panel');
-  const o = document.getElementById('mobile-overlay');
-  const open = p.classList.toggle('open');
-  o.classList.toggle('show', open);
-}
-function closePanel() {
-  document.getElementById('panel').classList.remove('open');
-  document.getElementById('mobile-overlay').classList.remove('show');
-}
-// close panel when furniture card is tapped on mobile
-document.getElementById('furniture-list').addEventListener('click', function() {
-  if (window.innerWidth < 768) closePanel();
-});
 </script>
 <div id="modal-overlay"><div id="modal"><h3>Add Furniture</h3><div class="mfield"><label>Name</label><input type="text" id="f-name" placeholder="e.g. Side Table"/></div><div class="mrow"><div class="mfield"><label>Width (cm)</label><input type="number" id="f-w" min="1" max="700" value="60"/></div><div class="mfield"><label>Depth (cm)</label><input type="number" id="f-d" min="1" max="700" value="40"/></div></div><div class="mfield"><label>Color</label><input type="color" id="f-color" value="#6a8a9a"/></div><div class="mbtns"><button id="modal-cancel" onclick="closeModal()">Cancel</button><button id="modal-ok" onclick="addCustom()">Add</button></div></div></div>
 <script>
@@ -715,23 +704,6 @@ window.deleteSelected = function() { _deleteSelected(); saveLayout(); };
 
 const _rotateSelected = rotateSelected;
 window.rotateSelected = function() { _rotateSelected(); saveLayout(); };
-
-window.addEventListener('resize', function(){ draw(); });
-
-function togglePanel() {
-  const p = document.getElementById('panel');
-  const o = document.getElementById('mobile-overlay');
-  const open = p.classList.toggle('open');
-  o.classList.toggle('show', open);
-}
-function closePanel() {
-  document.getElementById('panel').classList.remove('open');
-  document.getElementById('mobile-overlay').classList.remove('show');
-}
-// close panel when furniture card is tapped on mobile
-document.getElementById('furniture-list').addEventListener('click', function() {
-  if (window.innerWidth < 768) closePanel();
-});
 </script>
 </body>
 </html>

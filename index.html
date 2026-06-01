@@ -142,12 +142,12 @@ canvas.dragging { cursor: grabbing; }
 <script>
 const _mob = window.innerWidth <= 860;
 const M   = _mob ? 16 : 60;
-const RW  = 788, RH = 420;
+const RW  = 760, RH = 420;
 const S   = _mob ? Math.min((window.innerWidth - M*2) / RH, (window.innerHeight - 160) / RW) : 1.6;
 function px(c) { return c * S; }
 function cm(p) { return p / S; }
 
-// RW, RH, S, M defined above
+// RW=760, RH=420, S, M defined above
 
 // Room polygon — entire 420cm height; fixed structure handled as void overlay
 const ROOM_POLY = [
@@ -162,7 +162,7 @@ const ROOM_POLY = [
 // Black blocked zones
 const BLACK_ZONES = [
   { x:  0, y:  0, w:108, h:180, label:'Column',          sub:'108x180cm' },
-  { x:428, y:360, w:360, h: 60, label:'Fixed structure', sub:'360x60cm'  },
+  { x:400, y:360, w:360, h: 60, label:'Fixed structure', sub:'360x60cm'  },
 ];
 
 // Doors:
@@ -171,19 +171,19 @@ const BLACK_ZONES = [
 const DOORS = [
   { hx:RW,  hy:  0, r:90,
     aStart:Math.PI,     aEnd:Math.PI/2,     ccw:true,
-    leafClosed:[[698,0],[RW,0]],  leafOpen:[[RW,0],[RW,90]],
-    zone:{x:698, y:  0, w:90, h:90} },
-  { hx:428, hy: RH, r:90,
+    leafClosed:[[670,0],[RW,0]],  leafOpen:[[RW,0],[RW,90]],
+    zone:{x:670, y:  0, w:90, h:90} },
+  { hx:400, hy: RH, r:90,
     aStart:Math.PI,     aEnd:3*Math.PI/2,   ccw:false,
-    leafClosed:[[428,RH],[338,RH]], leafOpen:[[428,RH],[428,330]],
-    zone:{x:338, y:330, w:90, h:90} },
+    leafClosed:[[400,RH],[310,RH]], leafOpen:[[400,RH],[400,330]],
+    zone:{x:310, y:330, w:90, h:90} },
 ];
 const DOOR_ZONES = DOORS.map(d => d.zone);
 
 // Collision voids
 const VOID_ZONES = [
   { x:  0, y:  0, w:108, h:180 },          // column
-  { x:428, y:360, w:360, h: 60 },          // fixed structure (south, 360x60)
+  { x:400, y:360, w:360, h: 60 },          // fixed structure (south, 360x60)
 ];
 
 // Furniture
@@ -191,19 +191,19 @@ const FURNITURE = [
   { id:'couch',        name:'L-Couch',       color:'#909090', type:'L',
     w:250, h:200, parts:[{x:0,y:0,w:250,h:95},{x:155,y:95,w:95,h:105}],
     px:120, py:20, rot:0 },
-  { id:'diningtable',  name:'Dining Table',  color:'#7a4e2a', type:'rect', w:140, h:90,  px:488, py:30,  rot:0 },
-  { id:'desk',         name:'Desk',          color:'#e8e8e0', type:'rect', w:120, h:60,  px:488, py:150, rot:0 },
-  { id:'tvtable',      name:'TV Table',      color:'#1e1208', type:'rect', w:168, h:35,  px:120, py:200, rot:0 },
-  { id:'bookshelf1',   name:'Bookshelf 1',   color:'#1c1c1c', type:'rect', w:72,  h:40,  px:638, py:175, rot:0 },
-  { id:'bookshelf2',   name:'Bookshelf 2',   color:'#e8e8e0', type:'rect', w:100, h:45,  px:638, py:225, rot:0 },
-  { id:'shoestorage1', name:'Shoe Storage 1',color:'#1c1c1c', type:'rect', w:110, h:24,  px:120, py:150, rot:0 },
-  { id:'shoestorage2', name:'Shoe Storage 2',color:'#c8a064', type:'rect', w:60,  h:25,  px:488, py:240, rot:0 },
-  { id:'drawer1',      name:'Drawer',        color:'#e8e8e0', type:'rect', w:72,  h:40,  px:120, py:240, rot:0 },
-  { id:'mobiledrawer', name:'Mobile Drawer', color:'#c8a064', type:'rect', w:50,  h:30,  px:20,  py:240, rot:0 },
-  { id:'mesh',         name:'Mesh',          color:'#e8e8e0', type:'mesh', w:54,  h:44,  px:638, py:110, rot:0 },
+  { id:'diningtable',  name:'식탁',  color:'#7a4e2a', type:'rect', w:140, h:90,  px:488, py:30,  rot:0 },
+  { id:'desk',         name:'책상',          color:'#e8e8e0', type:'rect', w:120, h:60,  px:488, py:150, rot:0 },
+  { id:'tvtable',      name:'티비 단스',      color:'#1e1208', type:'rect', w:168, h:35,  px:120, py:200, rot:0 },
+  { id:'bookshelf1',   name:'책장',   color:'#1c1c1c', type:'rect', w:72,  h:40,  px:638, py:175, rot:0 },
+  { id:'bookshelf2',   name:'장난감 책장',   color:'#e8e8e0', type:'rect', w:100, h:45,  px:638, py:225, rot:0 },
+  { id:'shoestorage1', name:'검은 신발장',color:'#1c1c1c', type:'rect', w:110, h:24,  px:120, py:150, rot:0 },
+  { id:'shoestorage2', name:'신발장2',color:'#c8a064', type:'rect', w:60,  h:25,  px:488, py:240, rot:0 },
+  { id:'drawer1',      name:'서랍',        color:'#e8e8e0', type:'rect', w:72,  h:40,  px:120, py:240, rot:0 },
+  { id:'mobiledrawer', name:'갈색 이동식 모빌', color:'#c8a064', type:'rect', w:50,  h:30,  px:20,  py:240, rot:0 },
+  { id:'mesh',         name:'메쉬',          color:'#e8e8e0', type:'mesh', w:54,  h:44,  px:638, py:110, rot:0 },
   { id:'fabricdrawer', name:'Fabric Drawer', color:'#d4b896', type:'rect', w:86,  h:30,  px:638, py:160, rot:0 },
-  { id:'babybjorn',    name:'BabyBjorn',     color:'#b8c0c8', type:'rect', w:18,  h:26,  px:200, py:200, rot:0 },
-  { id:'mirror',       name:'Mirror',        color:'#d0dde8', type:'rect', w:16,  h:2,   px:200, py:240, rot:0 },
+  { id:'babybjorn',    name:'뉴본',     color:'#b8c0c8', type:'rect', w:18,  h:26,  px:200, py:200, rot:0 },
+  { id:'mirror',       name:'거울',        color:'#d0dde8', type:'rect', w:16,  h:2,   px:200, py:240, rot:0 },
 ];
 
 // Canvas
@@ -381,16 +381,16 @@ function drawRoom(){
 
   // Wall labels
   wallLabel(  0,   0, 108,   0, '108 cm',  0, -42);   // column top
-  wallLabel(108,   0,  RW,   0, '680 cm',  0, -42);   // room top
-  wallLabel(  0,   0,  RW,   0, '788 cm',  0, -26);   // total top
-  wallLabel(108,   0,  RW,   0, '680 cm',  0, -22);   // inner top wall
+  wallLabel(108,   0,  RW,   0, '652 cm',  0, -42);   // room top
+  wallLabel(  0,   0,  RW,   0, '760 cm',  0, -26);   // total top
+  wallLabel(108,   0,  RW,   0, '652 cm',  0, -22);   // inner top wall
   wallLabel( RW,   0,  RW,  RH, '420 cm', +22,  0);   // right wall total
   wallLabel( RW,   0,  RW, 360, '360 cm', +42,  0);   // right wall navigable
   wallLabel( RW, 360,  RW,  RH,  '60 cm', +42,  0);   // structure depth
-  wallLabel( RW,  RH,   0,  RH, '788 cm',  0, +22);   // full south wall
+  wallLabel( RW,  RH,   0,  RH, '760 cm',  0, +22);   // full south wall
   wallLabel(  0,  RH,   0, 120, '300 cm', -22,  0);   // left wall
   wallLabel(  0, 120, 108, 120, '108 cm',  0, -18);   // column junction
-  wallLabel(428, 360,  RW, 360, '360 cm',  0, +14);   // structure width
+  wallLabel(400, 360,  RW, 360, '360 cm',  0, +14);   // structure width
 }
 
 function drawMeshX(fw,fh){

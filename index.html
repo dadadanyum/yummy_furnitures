@@ -672,6 +672,7 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 const LAYOUT_DOC = db.collection('layouts').doc('main');
+let deletedBuiltins = new Set();
 
 function setSyncStatus(s) {
   const dot = document.getElementById('sync-dot');
@@ -686,7 +687,7 @@ function saveLayout() {
   FURNITURE.forEach(f => { positions[f.id] = {px:Math.round(f.px), py:Math.round(f.py), rot:f.rot||0}; });
   const custom = FURNITURE.filter(f => f.id.startsWith('custom_'))
     .map(f => ({id:f.id, name:f.name, color:f.color, type:f.type||'rect', w:f.w, h:f.h, px:Math.round(f.px), py:Math.round(f.py), rot:f.rot||0}));
-  LAYOUT_DOC.set({positions, custom})
+  LAYOUT_DOC.set({positions, custom, deletedBuiltins: [...deletedBuiltins]})
     .then(() => setSyncStatus('on'))
     .catch(e => { console.error('Save failed:', e); setSyncStatus(''); });
 }
@@ -721,6 +722,14 @@ LAYOUT_DOC.onSnapshot(snap => {
       }
     });
   }
+  if (data.deletedBuiltins) {
+    data.deletedBuiltins.forEach(id => deletedBuiltins.add(id));
+    FURNITURE.filter(f => !f.id.startsWith('custom_') && deletedBuiltins.has(f.id)).forEach(f => {
+      FURNITURE.splice(FURNITURE.indexOf(f), 1);
+      const card = document.querySelector('.furn-card[data-id="'+f.id+'"]');
+      if (card) card.remove();
+    });
+  }
   draw();
 }, err => { console.error('Listener error:', err); setSyncStatus(''); });
 
@@ -743,7 +752,10 @@ const _addCustom = addCustom;
 window.addCustom = function() { _addCustom(); saveLayout(); };
 
 const _deleteSelected = deleteSelected;
-window.deleteSelected = function() { _deleteSelected(); saveLayout(); };
+window.deleteSelected = function() {
+  if (selId && !selId.startsWith('custom_')) deletedBuiltins.add(selId);
+  _deleteSelected(); saveLayout();
+};
 
 const _rotateSelected = rotateSelected;
 window.rotateSelected = function() { _rotateSelected(); saveLayout(); };
